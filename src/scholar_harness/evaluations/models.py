@@ -108,3 +108,63 @@ class EvaluationExecution(BaseModel):
     runtime_error: str | None = None
     started_at: datetime
     ended_at: datetime
+
+
+class EvaluationSuiteInput(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    case_ids: list[str] = Field(min_length=1, max_length=100)
+
+    @field_validator("name")
+    @classmethod
+    def strip_suite_name(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("suite name cannot be blank")
+        return cleaned
+
+    @field_validator("case_ids")
+    @classmethod
+    def validate_case_ids(cls, values: list[str]) -> list[str]:
+        cleaned = [value.strip() for value in values]
+        if any(not value for value in cleaned):
+            raise ValueError("suite case ids cannot be blank")
+        if len(set(cleaned)) != len(cleaned):
+            raise ValueError("suite case ids must be unique")
+        return cleaned
+
+
+class EvaluationSuite(EvaluationSuiteInput):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class EvaluationSuiteItem(BaseModel):
+    position: int = Field(ge=0)
+    case_id: str
+    case_name: str
+    case_prompt: str
+    expectations: EvaluationExpectations
+    pass_threshold: float
+    result_id: str | None = None
+    run_id: str | None = None
+    event_count: int = Field(default=0, ge=0)
+    runtime_error: str | None = None
+    score: float | None = None
+    passed: bool = False
+    error: str | None = None
+
+
+class EvaluationSuiteRun(BaseModel):
+    id: str
+    suite_id: str
+    suite_name: str
+    case_ids: list[str]
+    items: list[EvaluationSuiteItem]
+    total_count: int = Field(ge=1)
+    passed_count: int = Field(ge=0)
+    failed_count: int = Field(ge=0)
+    error_count: int = Field(ge=0)
+    passed: bool
+    started_at: datetime
+    ended_at: datetime

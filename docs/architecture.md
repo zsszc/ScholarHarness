@@ -73,6 +73,12 @@ Runtime failures remain terminal trace evidence and expose only stable public er
 categories. Parallel invocations share repositories and trusted tools but never a
 runtime session.
 
+`EvaluationSuiteRunner` is the synchronous regression-gate layer above individual
+case execution. Suite definitions retain ordered case references; each run snapshots
+the suite and case intent, executes isolated cases sequentially, continues after a
+safe per-item orchestration error, and persists aggregate counts plus evidence
+links. Definition edits therefore affect future runs without rewriting history.
+
 The Workbench Evaluation Lab remains a presentation client. It submits typed case
 documents, asks the server to execute a case or grade an existing terminal run, and
 renders persisted checks and history through public evaluation APIs. Input
@@ -123,3 +129,5 @@ status. Rejected and superseded rows remain stored for audit and evaluation.
    inspection, score history, and responsive regression visualization.
 10. **Automated evaluation execution**: isolated case-prompt runs, guaranteed
     cleanup, safe failure evidence, and API/CLI/Workbench entry points.
+11. **Evaluation suites**: ordered multi-case regression gates, immutable aggregate
+    history, failure isolation, HTTP workflows, and CI-friendly CLI output.

@@ -208,6 +208,25 @@ still evaluated when it produced a terminal failed trace. Evaluation results
 snapshot the case definition used at evaluation time; editing a case affects future
 evaluations but does not rewrite existing evidence.
 
+Group cases into an ordered regression suite and run the whole gate:
+
+```bash
+curl -X POST http://127.0.0.1:8765/evaluations/suites \
+  -H 'content-type: application/json' \
+  -d '{"name":"Research regression","case_ids":["CASE_A","CASE_B"]}'
+
+curl -X POST \
+  http://127.0.0.1:8765/evaluations/suites/SUITE_ID/execute
+
+uv run scholar-harness eval-suite-run \
+  --suite SUITE_ID \
+  --database data/scholar_harness.db
+```
+
+Suites run cases sequentially in fresh sessions and persist an immutable aggregate
+with ordered item snapshots, pass/fail/error counts, trace ids, and result ids. An
+orchestration error is reduced to a safe category and does not hide later cases.
+
 ## Educational Python runtime
 
 `MiniPyRuntime` implements the same `AgentRuntime` contract as Pi while keeping the

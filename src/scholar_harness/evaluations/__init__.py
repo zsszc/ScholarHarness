@@ -5,10 +5,15 @@ from scholar_harness.evaluations.models import (
     EvaluationExecution,
     EvaluationExpectations,
     EvaluationResult,
+    EvaluationSuite,
+    EvaluationSuiteInput,
+    EvaluationSuiteItem,
+    EvaluationSuiteRun,
 )
 from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
 from scholar_harness.evaluations.runner import EvaluationExecutionError, EvaluationRunner
 from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
+from scholar_harness.evaluations.suites import EvaluationSuiteRunner
 
 __all__ = [
     "EvaluationCase",
@@ -20,6 +25,11 @@ __all__ = [
     "EvaluationExpectations",
     "EvaluationResult",
     "EvaluationRunner",
+    "EvaluationSuite",
+    "EvaluationSuiteInput",
+    "EvaluationSuiteItem",
+    "EvaluationSuiteRun",
+    "EvaluationSuiteRunner",
     "SQLiteEvaluationRepository",
     "TraceEvaluator",
 ]

@@ -16,10 +16,11 @@ from scholar_harness.chat_sessions import (
     ChatSessionManager,
     create_default_chat_manager,
 )
-from scholar_harness.evaluations.models import EvaluationExecution
+from scholar_harness.evaluations.models import EvaluationExecution, EvaluationSuiteRun
 from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
 from scholar_harness.evaluations.runner import EvaluationExecutionError, EvaluationRunner
 from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
+from scholar_harness.evaluations.suites import EvaluationSuiteRunner
 from scholar_harness.runtimes.base import AgentRuntime
 from scholar_harness.runtimes.mini_py import MiniPyRuntime
 from scholar_harness.runtimes.model import ModelAdapter
@@ -92,6 +93,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--database",
         type=Path,
         default=Path("data/scholar_harness.db"),
+    )
+
+    eval_suite_run = commands.add_parser(
+        "eval-suite-run", help="Execute every case in an evaluation suite"
+    )
+    eval_suite_run.add_argument("--suite", required=True, dest="suite_id")
+    eval_suite_run.add_argument(
+        "--database", type=Path, default=Path("data/scholar_harness.db")
     )
 
     smoke = commands.add_parser("pi-smoke", help="Run a real Pi RPC and extension smoke test")
@@ -253,6 +262,27 @@ async def run_configured_evaluation(
         await sessions.close_all()
 
 
+async def run_configured_evaluation_suite(
+    suite_id: str,
+    database: Path,
+    *,
+    environ: Mapping[str, str] | None = None,
+    chat_manager: ChatSessionManager | None = None,
+) -> EvaluationSuiteRun:
+    traces = SQLiteTraceRepository(database)
+    evaluations = SQLiteEvaluationRepository(database)
+    sessions = chat_manager or create_default_chat_manager(
+        tools=build_chat_tools(database), traces=traces, environ=environ
+    )
+    runner = EvaluationRunner(
+        sessions, evaluations, TraceEvaluator(traces, evaluations)
+    )
+    try:
+        return await EvaluationSuiteRunner(evaluations, runner).execute(suite_id)
+    finally:
+        await sessions.close_all()
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -309,6 +339,20 @@ def main() -> None:
         ) as exc:
             parser.error(str(exc))
         print(execution.model_dump_json(indent=2))
+        return
+
+    if args.command == "eval-suite-run":
+        try:
+            suite_run = asyncio.run(
+                run_configured_evaluation_suite(args.suite_id, args.database)
+            )
+            if suite_run.items and all(
+                item.error == "configuration_error" for item in suite_run.items
+            ):
+                raise ChatConfigurationError("OPENAI_MODEL is required")
+        except (ChatConfigurationError, KeyError) as exc:
+            parser.error(str(exc))
+        print(suite_run.model_dump_json(indent=2))
         return
 
     python_status = sys.version.split()[0]

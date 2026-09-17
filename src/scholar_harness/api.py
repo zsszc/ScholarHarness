@@ -27,10 +27,14 @@ from scholar_harness.evaluations.models import (
     EvaluationCaseInput,
     EvaluationExecution,
     EvaluationResult,
+    EvaluationSuite,
+    EvaluationSuiteInput,
+    EvaluationSuiteRun,
 )
 from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
 from scholar_harness.evaluations.runner import EvaluationExecutionError, EvaluationRunner
 from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
+from scholar_harness.evaluations.suites import EvaluationSuiteRunner
 from scholar_harness.memory.models import Memory, MemoryStatus
 from scholar_harness.memory.repository import SQLiteMemoryRepository
 from scholar_harness.memory.tools import build_memory_tools
@@ -63,6 +67,7 @@ def create_app(
     tools.extend(build_memory_tools(memories, paper_repository))
     chats = chat_session_manager or create_default_chat_manager(tools=tools, traces=traces)
     evaluation_runner = EvaluationRunner(chats, evaluations, evaluator)
+    suite_runner = EvaluationSuiteRunner(evaluations, evaluation_runner)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -401,6 +406,56 @@ def create_app(
     async def get_evaluation_result(result_id: str) -> EvaluationResult:
         try:
             return evaluations.get_result(result_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/evaluations/suites", status_code=201)
+    async def create_evaluation_suite(value: EvaluationSuiteInput) -> EvaluationSuite:
+        try:
+            return evaluations.create_suite(value)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.put("/evaluations/suites/{suite_id}")
+    async def update_evaluation_suite(
+        suite_id: str, value: EvaluationSuiteInput
+    ) -> EvaluationSuite:
+        try:
+            return evaluations.update_suite(suite_id, value)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/evaluations/suites")
+    async def list_evaluation_suites(
+        limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    ) -> list[EvaluationSuite]:
+        return evaluations.list_suites(limit=limit)
+
+    @app.get("/evaluations/suites/{suite_id}")
+    async def get_evaluation_suite(suite_id: str) -> EvaluationSuite:
+        try:
+            return evaluations.get_suite(suite_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/evaluations/suites/{suite_id}/execute", status_code=201)
+    async def execute_evaluation_suite(suite_id: str) -> EvaluationSuiteRun:
+        try:
+            return await suite_runner.execute(suite_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/evaluations/suite-runs")
+    async def list_evaluation_suite_runs(
+        suite_id: Annotated[str | None, Query()] = None,
+        limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    ) -> list[EvaluationSuiteRun]:
+        return evaluations.list_suite_runs(suite_id=suite_id, limit=limit)
+
+    @app.get("/evaluations/suite-runs/{run_id}")
+    async def get_evaluation_suite_run(run_id: str) -> EvaluationSuiteRun:
+        try:
+            return evaluations.get_suite_run(run_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
