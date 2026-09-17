@@ -25,10 +25,27 @@ def test_sqlite_repository_persists_and_searches(tmp_path) -> None:
     reopened = SQLitePaperRepository(database)
     hits = reopened.search("evidence memory")
     passage = reopened.read("persistent-paper", "method-1")
+    catalog = reopened.list()
 
     assert hits[0]["paper_id"] == "persistent-paper"
     assert hits[0]["page"] == 11
     assert passage["text"].startswith("Evidence provenance")
+    assert catalog[0].model_dump() == {
+        "id": "persistent-paper",
+        "title": "Reliable Agent Memory",
+        "authors": ["Ada Example"],
+        "year": 2026,
+        "passage_count": 1,
+    }
+
+
+def test_paper_catalog_is_deterministic_and_limited(tmp_path) -> None:
+    repository = SQLitePaperRepository(tmp_path / "catalog.db")
+    repository.add(Paper(id="z", title="beta", passages=[]))
+    repository.add(Paper(id="b", title="Alpha", passages=[Passage(id="1", text="a")]))
+    repository.add(Paper(id="a", title="alpha", passages=[]))
+
+    assert [paper.id for paper in repository.list(limit=2)] == ["a", "b"]
 
 
 def test_reimport_replaces_old_passages(tmp_path) -> None:

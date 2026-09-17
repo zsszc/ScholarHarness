@@ -23,8 +23,14 @@ class FakePdfIngestor:
         )
 
 
-def test_health_and_tool_flow() -> None:
-    client = TestClient(create_app())
+def test_health_and_tool_flow(tmp_path) -> None:
+    client = TestClient(
+        create_app(
+            repository=InMemoryPaperRepository(),
+            memory_repository=SQLiteMemoryRepository(tmp_path / "api.db"),
+            trace_repository=SQLiteTraceRepository(tmp_path / "api.db"),
+        )
+    )
     assert client.get("/health").json() == {"status": "ok"}
 
     paper = {
@@ -40,12 +46,27 @@ def test_health_and_tool_flow() -> None:
     )
     assert response.status_code == 200
     assert response.json()["items"][0]["paper_id"] == "paper-api"
+    papers = client.get("/papers")
+    assert papers.status_code == 200
+    assert papers.json() == [
+        {
+            "id": "paper-api",
+            "title": "Tool Calling",
+            "authors": [],
+            "year": None,
+            "passage_count": 1,
+        }
+    ]
 
 
 def test_home_page_and_invalid_pdf() -> None:
     client = TestClient(create_app())
 
     assert client.get("/").status_code == 200
+    assert 'href="/workbench"' in client.get("/").text
+    workbench = client.get("/workbench")
+    assert workbench.status_code == 200
+    assert "ScholarHarness · Workbench" in workbench.text
     assert client.get("/favicon.ico").status_code == 204
     response = client.post(
         "/papers/import/pdf",

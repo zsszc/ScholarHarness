@@ -8,12 +8,13 @@ from fastapi.responses import HTMLResponse, Response
 from scholar_harness.memory.models import Memory, MemoryStatus
 from scholar_harness.memory.repository import SQLiteMemoryRepository
 from scholar_harness.memory.tools import build_memory_tools
-from scholar_harness.papers.models import Paper
+from scholar_harness.papers.models import Paper, PaperSummary
 from scholar_harness.papers.pdf import PdfIngestor
 from scholar_harness.papers.repository import PaperRepository, SQLitePaperRepository
 from scholar_harness.papers.tools import build_paper_tools
 from scholar_harness.traces.models import AgentRun, ToolExecution, TraceEvent
 from scholar_harness.traces.repository import SQLiteTraceRepository
+from scholar_harness.workbench import WORKBENCH_HTML
 
 MAX_PDF_BYTES = 50 * 1024 * 1024
 
@@ -43,6 +44,7 @@ def create_app(
             <p>Python research-agent tool service is running.</p>
             <ul>
               <li><a href="/docs">OpenAPI tools</a></li>
+              <li><a href="/workbench">Open Workbench</a></li>
               <li><a href="/health">Health check</a></li>
               <li><a href="/memories">Memory candidates</a></li>
               <li><a href="/runs">Agent runs</a></li>
@@ -59,6 +61,10 @@ def create_app(
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    @app.get("/workbench", response_class=HTMLResponse)
+    async def workbench() -> str:
+        return WORKBENCH_HTML
+
     @app.get("/internal/tools")
     async def tool_schemas() -> dict[str, object]:
         return tools.schemas()
@@ -67,6 +73,12 @@ def create_app(
     async def add_paper(paper: Paper) -> Paper:
         paper_repository.add(paper)
         return paper
+
+    @app.get("/papers")
+    async def list_papers(
+        limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    ) -> list[PaperSummary]:
+        return paper_repository.list(limit=limit)
 
     @app.post("/papers/import/pdf", status_code=201)
     async def import_pdf(

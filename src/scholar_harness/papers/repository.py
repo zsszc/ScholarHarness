@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Protocol
 
 from scholar_harness.papers.embeddings import EmbeddingProvider, HashingEmbeddingProvider
-from scholar_harness.papers.models import Paper, Passage
+from scholar_harness.papers.models import Paper, PaperSummary, Passage
 
 _TOKEN_PATTERN = re.compile(r"[\w\u4e00-\u9fff]+", re.UNICODE)
 _MIN_VECTOR_SIMILARITY = 0.05
@@ -16,6 +16,8 @@ _MIN_VECTOR_SIMILARITY = 0.05
 
 class PaperRepository(Protocol):
     def add(self, paper: Paper) -> None: ...
+
+    def list(self, limit: int = 100) -> list[PaperSummary]: ...
 
     def search(
         self, query: str, limit: int = 5, mode: str = "hybrid"
@@ -50,6 +52,22 @@ class InMemoryPaperRepository(PassageResultMixin):
 
     def add(self, paper: Paper) -> None:
         self._papers[paper.id] = paper
+
+    def list(self, limit: int = 100) -> list[PaperSummary]:
+        papers = sorted(
+            self._papers.values(),
+            key=lambda paper: (paper.title.casefold(), paper.id),
+        )
+        return [
+            PaperSummary(
+                id=paper.id,
+                title=paper.title,
+                authors=paper.authors,
+                year=paper.year,
+                passage_count=len(paper.passages),
+            )
+            for paper in papers[:limit]
+        ]
 
     def search(
         self, query: str, limit: int = 5, mode: str = "hybrid"
@@ -188,6 +206,7 @@ class SQLitePaperRepository(PassageResultMixin):
                     for passage in paper.passages
                 ],
             )
+
             connection.executemany(
                 """
                 INSERT INTO passage_fts (passage_id, paper_id, title, text, page, section)
@@ -222,6 +241,33 @@ class SQLitePaperRepository(PassageResultMixin):
                     for passage, vector in zip(paper.passages, vectors, strict=True)
                 ],
             )
+
+    def list(self, limit: int = 100) -> list[PaperSummary]:
+        import json
+
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT p.id, p.title, p.authors_json, p.year,
+                       COUNT(s.id) AS passage_count
+                FROM papers p
+                LEFT JOIN passages s ON s.paper_id = p.id
+                GROUP BY p.id, p.title, p.authors_json, p.year
+                ORDER BY lower(p.title), p.id
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return [
+            PaperSummary(
+                id=row["id"],
+                title=row["title"],
+                authors=json.loads(row["authors_json"]),
+                year=row["year"],
+                passage_count=row["passage_count"],
+            )
+            for row in rows
+        ]
 
     @staticmethod
     def _pack_vector(vector: list[float]) -> bytes:

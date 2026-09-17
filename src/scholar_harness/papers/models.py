@@ -20,6 +20,14 @@ class Paper(BaseModel):
     passages: list[Passage] = Field(default_factory=list)
 
 
+class PaperSummary(BaseModel):
+    id: str
+    title: str
+    authors: list[str] = Field(default_factory=list)
+    year: int | None = None
+    passage_count: int
+
+
 class SearchPapersInput(BaseModel):
     query: str = Field(min_length=1)
     limit: int = Field(default=5, ge=1, le=50)

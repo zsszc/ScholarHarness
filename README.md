@@ -17,6 +17,7 @@ The repository currently contains the first vertical slice:
 - evidence-verified candidate memories with explicit confirmation and recall;
 - durable, redacted runtime traces and correlated tool executions;
 - an inspectable Python model/tool loop with abort, branching, compaction, and replay;
+- a local observability workbench for runs, tools, memory review, and library search;
 - a FastAPI service exposing the tool bridge;
 - a thin Pi TypeScript extension that forwards tool calls to Python.
 
@@ -57,6 +58,12 @@ uv run scholar-harness api --reload
 
 Open `http://127.0.0.1:8765/docs` to exercise the paper tools. Papers are stored in
 `data/scholar_harness.db` by default.
+
+Open `http://127.0.0.1:8765/workbench` for the local research-agent console. It
+summarizes runs and tool calls, replays normalized event timelines, exposes memory
+confirmation/rejection, and searches the paper collection in hybrid or lexical
+mode. The workbench has no external asset or build dependency and is intended for
+localhost; authentication and public deployment are not part of the current scope.
 
 For a full Pi-extension-to-Python bridge check, keep the API running in one terminal
 and run this in another:

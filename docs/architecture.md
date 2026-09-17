@@ -40,6 +40,11 @@ internal messages and tool definitions to Chat Completions function calls over
 HTTP, but remains outside session, tool execution, and trace ownership. The CLI
 composes it with MiniPy rather than introducing provider concerns into the runtime.
 
+The local workbench is a thin HTTP client of the same paper, memory, and trace APIs.
+It has no privileged SQLite path: memory review still crosses the explicit status
+endpoints, passage search still crosses `ToolRegistry`, and trace payloads arrive
+after backend redaction and size bounding.
+
 `TracingRuntime` can wrap any runtime implementation. It persists ordered, redacted
 events and correlated tool executions while forwarding normalized events unchanged.
 Stable session entries use idempotency keys; live deltas remain distinct for replay.
