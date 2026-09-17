@@ -1,0 +1,53 @@
+from __future__ import annotations
+
+import inspect
+from collections.abc import Awaitable, Callable, Mapping
+from dataclasses import dataclass
+from typing import Any
+
+from pydantic import BaseModel
+
+ToolHandler = Callable[[BaseModel], Mapping[str, Any] | Awaitable[Mapping[str, Any]]]
+
+
+@dataclass(frozen=True)
+class Tool:
+    name: str
+    description: str
+    input_model: type[BaseModel]
+    handler: ToolHandler
+
+    @property
+    def json_schema(self) -> dict[str, Any]:
+        return self.input_model.model_json_schema()
+
+
+class ToolRegistry:
+    def __init__(self) -> None:
+        self._tools: dict[str, Tool] = {}
+
+    def register(self, tool: Tool) -> None:
+        if tool.name in self._tools:
+            raise ValueError(f"Tool already registered: {tool.name}")
+        self._tools[tool.name] = tool
+
+    def extend(self, other: ToolRegistry) -> None:
+        for tool in other._tools.values():
+            self.register(tool)
+
+    def get(self, name: str) -> Tool:
+        try:
+            return self._tools[name]
+        except KeyError as exc:
+            raise KeyError(f"Unknown tool: {name}") from exc
+
+    def schemas(self) -> dict[str, dict[str, Any]]:
+        return {name: tool.json_schema for name, tool in self._tools.items()}
+
+    async def execute(self, name: str, arguments: Mapping[str, Any]) -> Mapping[str, Any]:
+        tool = self.get(name)
+        validated = tool.input_model.model_validate(arguments)
+        result = tool.handler(validated)
+        if inspect.isawaitable(result):
+            result = await result
+        return result
