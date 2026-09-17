@@ -65,11 +65,20 @@ Results compare against the previous different run for the same case, making sco
 deltas and regressions available to local workflows and CI without coupling
 evaluation policy to a runtime.
 
-The Workbench Evaluation Lab remains a presentation and orchestration client. It
-submits typed case documents, selects terminal runs, and renders persisted checks
-and history through the public evaluation APIs. Input normalization is limited to
-comma-separated form ergonomics; validation, scoring, comparison, and regression
-classification stay in Python.
+`EvaluationRunner` closes the execution/evaluation loop without adding another
+agent implementation. It loads a persisted case, creates a fresh server-owned
+MiniPy session, streams the stored prompt through the normal tracing boundary,
+evaluates the resulting terminal run, and always removes the temporary session.
+Runtime failures remain terminal trace evidence and expose only stable public error
+categories. Parallel invocations share repositories and trusted tools but never a
+runtime session.
+
+The Workbench Evaluation Lab remains a presentation client. It submits typed case
+documents, asks the server to execute a case or grade an existing terminal run, and
+renders persisted checks and history through public evaluation APIs. Input
+normalization is limited to comma-separated form ergonomics; provider selection,
+execution, validation, scoring, comparison, and regression classification stay in
+Python.
 
 ## Tool boundary
 
@@ -112,3 +121,5 @@ status. Rejected and superseded rows remain stored for audit and evaluation.
    regression baselines, HTTP workflows, and CI-friendly CLI output.
 9. **Evaluation workbench**: case authoring, terminal-run grading, evidence
    inspection, score history, and responsive regression visualization.
+10. **Automated evaluation execution**: isolated case-prompt runs, guaranteed
+    cleanup, safe failure evidence, and API/CLI/Workbench entry points.

@@ -182,9 +182,17 @@ curl -X POST http://127.0.0.1:8765/evaluations/cases \
   }'
 ```
 
-Evaluate an existing run through HTTP or produce CI-friendly JSON from the CLI:
+Execute a case from its stored prompt, or evaluate an existing run. Both CLI paths
+print CI-friendly JSON:
 
 ```bash
+curl -X POST \
+  http://127.0.0.1:8765/evaluations/cases/CASE_ID/execute
+
+uv run scholar-harness eval-run \
+  --case CASE_ID \
+  --database data/scholar_harness.db
+
 curl -X POST \
   http://127.0.0.1:8765/evaluations/cases/CASE_ID/runs/RUN_ID
 
@@ -194,8 +202,11 @@ uv run scholar-harness eval \
   --database data/scholar_harness.db
 ```
 
-Evaluation results snapshot the case definition used at evaluation time. Editing a
-case affects future evaluations but does not rewrite existing evidence.
+`eval-run` uses a fresh, server-configured MiniPy session, persists its trace,
+evaluates the terminal run, and removes the temporary session. A model failure is
+still evaluated when it produced a terminal failed trace. Evaluation results
+snapshot the case definition used at evaluation time; editing a case affects future
+evaluations but does not rewrite existing evidence.
 
 ## Educational Python runtime
 
@@ -254,10 +265,10 @@ runs remain durable in the trace database. Restarting the API intentionally clea
 the live sessions.
 
 Select **Evaluation Lab** to author or edit deterministic cases, evaluate any
-terminal run, inspect each check's expected and observed evidence, and compare score
-history. Regression rows show the previous score and signed delta; all displayed
-values come from persisted backend result snapshots rather than browser-side
-rescoring.
+terminal run, or execute the selected Case prompt in a fresh isolated session.
+Inspect each check's expected and observed evidence and compare score history.
+Regression rows show the previous score and signed delta; all displayed values come
+from persisted backend result snapshots rather than browser-side rescoring.
 
 ## Pi bridge
 

@@ -25,9 +25,11 @@ from scholar_harness.chat_sessions import (
 from scholar_harness.evaluations.models import (
     EvaluationCase,
     EvaluationCaseInput,
+    EvaluationExecution,
     EvaluationResult,
 )
 from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
+from scholar_harness.evaluations.runner import EvaluationExecutionError, EvaluationRunner
 from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
 from scholar_harness.memory.models import Memory, MemoryStatus
 from scholar_harness.memory.repository import SQLiteMemoryRepository
@@ -60,6 +62,7 @@ def create_app(
     tools = build_paper_tools(paper_repository)
     tools.extend(build_memory_tools(memories, paper_repository))
     chats = chat_session_manager or create_default_chat_manager(tools=tools, traces=traces)
+    evaluation_runner = EvaluationRunner(chats, evaluations, evaluator)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -371,6 +374,17 @@ def create_app(
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except EvaluationConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.post("/evaluations/cases/{case_id}/execute", status_code=201)
+    async def execute_evaluation_case(case_id: str) -> EvaluationExecution:
+        try:
+            return await evaluation_runner.execute(case_id)
+        except ChatConfigurationError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except (EvaluationConflictError, EvaluationExecutionError) as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @app.get("/evaluations/results")

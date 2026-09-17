@@ -1,21 +1,36 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import sys
+from collections.abc import Sequence
 
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from scholar_harness.api import create_app
-from scholar_harness.cli import main
+from scholar_harness.chat_sessions import (
+    ChatConfigurationError,
+    ChatSessionManager,
+    create_default_chat_manager,
+)
+from scholar_harness.cli import main, run_configured_evaluation
 from scholar_harness.core.events import AgentEvent
 from scholar_harness.evaluations.models import (
     EvaluationCaseInput,
     EvaluationExpectations,
 )
 from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
+from scholar_harness.evaluations.runner import EvaluationExecutionError, EvaluationRunner
 from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
+from scholar_harness.runtimes.model import (
+    ModelMessage,
+    ModelResponse,
+    ModelToolDefinition,
+)
+from scholar_harness.runtimes.openai_compatible import ModelAdapterError
+from scholar_harness.tools.registry import ToolRegistry
 from scholar_harness.traces.repository import SQLiteTraceRepository
 
 
@@ -84,6 +99,54 @@ def completed_run(
             ),
         )
     return traces.finish_run(run.id, "completed")
+
+
+class ScriptedExecutionAdapter:
+    def __init__(self, response: ModelResponse) -> None:
+        self.response = response
+        self.closed = 0
+        self.prompts: list[str] = []
+
+    async def complete(
+        self,
+        messages: Sequence[ModelMessage],
+        tools: Sequence[ModelToolDefinition],
+    ) -> ModelResponse:
+        self.prompts.append(messages[-1].content)
+        return self.response
+
+    async def aclose(self) -> None:
+        self.closed += 1
+
+
+class FailingExecutionAdapter(ScriptedExecutionAdapter):
+    async def complete(self, messages, tools) -> ModelResponse:
+        raise ModelAdapterError("provider secret https://private.invalid/v1")
+
+
+class BlockingExecutionAdapter(ScriptedExecutionAdapter):
+    def __init__(self) -> None:
+        super().__init__(ModelResponse())
+        self.entered = asyncio.Event()
+        self.cancelled = False
+
+    async def complete(self, messages, tools) -> ModelResponse:
+        self.entered.set()
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            self.cancelled = True
+            raise
+        raise AssertionError("unreachable")
+
+
+def execution_manager(database, adapters) -> ChatSessionManager:
+    remaining = list(adapters)
+    return ChatSessionManager(
+        tools=ToolRegistry(),
+        traces=SQLiteTraceRepository(database),
+        adapter_factory=lambda: remaining.pop(0),
+    )
 
 
 def test_expectation_validation_rejects_empty_and_contradictory_cases() -> None:
@@ -327,4 +390,205 @@ def test_eval_cli_prints_json_and_rejects_unknown_ids(tmp_path, monkeypatch, cap
     )
     with pytest.raises(SystemExit) as caught:
         main()
+    assert caught.value.code == 2
+
+
+async def test_runner_executes_stored_prompt_evaluates_and_cleans_session(
+    tmp_path,
+) -> None:
+    database = tmp_path / "runner.db"
+    traces = SQLiteTraceRepository(database)
+    evaluations = SQLiteEvaluationRepository(database)
+    case = evaluations.create_case(
+        case_input(answer_contains=["evidence"], terminal_status="completed")
+    )
+    adapter = ScriptedExecutionAdapter(ModelResponse(content="Evidence found."))
+    sessions = execution_manager(database, [adapter])
+
+    execution = await EvaluationRunner(
+        sessions, evaluations, TraceEvaluator(traces, evaluations)
+    ).execute(case.id)
+
+    assert execution.result.passed is True
+    assert execution.run_id == execution.result.run_id
+    assert execution.event_count == 4
+    assert execution.runtime_error is None
+    assert adapter.prompts == [case.prompt]
+    assert adapter.closed == 1
+    assert await sessions.list() == []
+    assert traces.get_run(execution.run_id).status == "completed"
+
+
+async def test_runner_evaluates_failed_trace_and_redacts_runtime_error(tmp_path) -> None:
+    database = tmp_path / "failed-runner.db"
+    traces = SQLiteTraceRepository(database)
+    evaluations = SQLiteEvaluationRepository(database)
+    case = evaluations.create_case(case_input(terminal_status="failed"))
+    adapter = FailingExecutionAdapter(ModelResponse())
+    sessions = execution_manager(database, [adapter])
+
+    execution = await EvaluationRunner(
+        sessions, evaluations, TraceEvaluator(traces, evaluations)
+    ).execute(case.id)
+
+    assert execution.result.passed is True
+    assert execution.result.run_status == "failed"
+    assert execution.event_count == 1
+    assert execution.runtime_error == "model_error"
+    assert "private.invalid" not in execution.model_dump_json()
+    assert adapter.closed == 1
+    assert await sessions.list() == []
+
+
+async def test_runner_cleans_session_on_evaluation_failure_and_cancellation(
+    tmp_path,
+) -> None:
+    database = tmp_path / "cleanup.db"
+    traces = SQLiteTraceRepository(database)
+    evaluations = SQLiteEvaluationRepository(database)
+    case = evaluations.create_case(case_input(terminal_status="completed"))
+    first = ScriptedExecutionAdapter(ModelResponse(content="done"))
+    sessions = execution_manager(database, [first])
+
+    class BrokenEvaluator:
+        def evaluate(self, case_id, run_id):
+            raise EvaluationExecutionError("evaluation failed")
+
+    with pytest.raises(EvaluationExecutionError, match="evaluation failed"):
+        await EvaluationRunner(sessions, evaluations, BrokenEvaluator()).execute(case.id)
+    assert first.closed == 1
+    assert await sessions.list() == []
+
+    blocking = BlockingExecutionAdapter()
+    blocking_sessions = execution_manager(database, [blocking])
+    task = asyncio.create_task(
+        EvaluationRunner(
+            blocking_sessions,
+            evaluations,
+            TraceEvaluator(traces, evaluations),
+        ).execute(case.id)
+    )
+    await blocking.entered.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert blocking.cancelled is True
+    assert blocking.closed == 1
+    assert await blocking_sessions.list() == []
+
+
+async def test_parallel_runner_executions_have_distinct_runs(tmp_path) -> None:
+    database = tmp_path / "parallel.db"
+    traces = SQLiteTraceRepository(database)
+    evaluations = SQLiteEvaluationRepository(database)
+    case = evaluations.create_case(case_input(terminal_status="completed"))
+    adapters = [
+        ScriptedExecutionAdapter(ModelResponse(content="one")),
+        ScriptedExecutionAdapter(ModelResponse(content="two")),
+    ]
+    sessions = execution_manager(database, adapters)
+    runner = EvaluationRunner(sessions, evaluations, TraceEvaluator(traces, evaluations))
+
+    first, second = await asyncio.gather(runner.execute(case.id), runner.execute(case.id))
+
+    assert first.run_id != second.run_id
+    assert first.result.id != second.result.id
+    session_ids = {
+        traces.get_run(first.run_id).external_session_id,
+        traces.get_run(second.run_id).external_session_id,
+    }
+    assert len(session_ids) == 2
+    assert [adapter.closed for adapter in adapters] == [1, 1]
+    assert await sessions.list() == []
+
+
+def test_evaluation_execution_api_success_and_errors(tmp_path) -> None:
+    database = tmp_path / "execute-api.db"
+    traces = SQLiteTraceRepository(database)
+    evaluations = SQLiteEvaluationRepository(database)
+    case = evaluations.create_case(case_input(terminal_status="completed"))
+    adapter = ScriptedExecutionAdapter(ModelResponse(content="done"))
+    sessions = execution_manager(database, [adapter])
+    app = create_app(
+        trace_repository=traces,
+        evaluation_repository=evaluations,
+        chat_session_manager=sessions,
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            f"/evaluations/cases/{case.id}/execute",
+            json={"prompt": "ignored", "api_key": "ignored", "base_url": "ignored"},
+        )
+        assert response.status_code == 201
+        body = response.json()
+        assert body["result"]["case_id"] == case.id
+        assert body["run_id"] == body["result"]["run_id"]
+        assert "api_key" not in body
+        assert "base_url" not in body
+        assert client.post("/evaluations/cases/missing/execute").status_code == 404
+
+    unavailable = create_default_chat_manager(
+        tools=ToolRegistry(), traces=traces, environ={}
+    )
+    with TestClient(
+        create_app(
+            trace_repository=traces,
+            evaluation_repository=evaluations,
+            chat_session_manager=unavailable,
+        )
+    ) as client:
+        assert client.post(f"/evaluations/cases/{case.id}/execute").status_code == 503
+
+
+async def test_eval_run_helper_and_cli_json_output(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    database = tmp_path / "eval-run-cli.db"
+    evaluations = SQLiteEvaluationRepository(database)
+    case = evaluations.create_case(case_input(terminal_status="completed"))
+    sessions = execution_manager(
+        database, [ScriptedExecutionAdapter(ModelResponse(content="done"))]
+    )
+    execution = await run_configured_evaluation(
+        case.id, database, chat_manager=sessions
+    )
+    assert execution.result.passed is True
+
+    async def fake_run(case_id, path):
+        assert case_id == case.id
+        assert path == database
+        return execution
+
+    monkeypatch.setattr(
+        "scholar_harness.cli.run_configured_evaluation", fake_run
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "scholar-harness",
+            "eval-run",
+            "--case",
+            case.id,
+            "--database",
+            str(database),
+        ],
+    )
+    await asyncio.to_thread(main)
+    output = json.loads(capsys.readouterr().out)
+    assert output["run_id"] == execution.run_id
+    assert output["result"]["passed"] is True
+
+    with pytest.raises(ChatConfigurationError, match="OPENAI_MODEL"):
+        await run_configured_evaluation(case.id, database, environ={})
+
+    async def missing_config(case_id, path):
+        raise ChatConfigurationError("OPENAI_MODEL is required")
+
+    monkeypatch.setattr(
+        "scholar_harness.cli.run_configured_evaluation", missing_config
+    )
+    with pytest.raises(SystemExit) as caught:
+        await asyncio.to_thread(main)
     assert caught.value.code == 2

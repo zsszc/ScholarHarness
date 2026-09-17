@@ -99,3 +99,12 @@ class EvaluationResult(BaseModel):
     score_delta: float | None = None
     regression: bool = False
     evaluated_at: datetime
+
+
+class EvaluationExecution(BaseModel):
+    result: EvaluationResult
+    run_id: str
+    event_count: int
+    runtime_error: str | None = None
+    started_at: datetime
+    ended_at: datetime

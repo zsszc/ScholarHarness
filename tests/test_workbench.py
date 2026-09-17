@@ -64,6 +64,12 @@ def test_workbench_evaluation_lab_uses_public_contracts_and_safe_evidence() -> N
     assert 'request("/evaluations/cases?limit=500")' in WORKBENCH_HTML
     assert 'request("/evaluations/results?limit=500")' in WORKBENCH_HTML
     assert "/evaluations/cases/${encodeURIComponent(state.selectedCase.id)}/runs/" in WORKBENCH_HTML
+    assert (
+        "/evaluations/cases/${encodeURIComponent(state.selectedCase.id)}/execute"
+        in WORKBENCH_HTML
+    )
+    assert 'id="execute-eval-case"' in WORKBENCH_HTML
+    assert "execution.event_count" in WORKBENCH_HTML
     assert 'make("pre","",pretty(check.expected))' in WORKBENCH_HTML
     assert 'make("pre","",pretty(check.observed))' in WORKBENCH_HTML
     assert 'value.split(",").map(item=>item.trim()).filter(Boolean)' in WORKBENCH_HTML

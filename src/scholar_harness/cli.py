@@ -11,7 +11,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from scholar_harness.chat import build_chat_tools, run_chat
+from scholar_harness.chat_sessions import (
+    ChatConfigurationError,
+    ChatSessionManager,
+    create_default_chat_manager,
+)
+from scholar_harness.evaluations.models import EvaluationExecution
 from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
+from scholar_harness.evaluations.runner import EvaluationExecutionError, EvaluationRunner
 from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
 from scholar_harness.runtimes.base import AgentRuntime
 from scholar_harness.runtimes.mini_py import MiniPyRuntime
@@ -72,6 +79,16 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--case", required=True, dest="case_id")
     evaluate.add_argument("--run", required=True, dest="run_id")
     evaluate.add_argument(
+        "--database",
+        type=Path,
+        default=Path("data/scholar_harness.db"),
+    )
+
+    eval_run = commands.add_parser(
+        "eval-run", help="Execute and evaluate a case through MiniPy"
+    )
+    eval_run.add_argument("--case", required=True, dest="case_id")
+    eval_run.add_argument(
         "--database",
         type=Path,
         default=Path("data/scholar_harness.db"),
@@ -211,6 +228,31 @@ async def run_configured_chat(
     return trace_runtime.last_run_id if trace_runtime else None
 
 
+async def run_configured_evaluation(
+    case_id: str,
+    database: Path,
+    *,
+    environ: Mapping[str, str] | None = None,
+    chat_manager: ChatSessionManager | None = None,
+) -> EvaluationExecution:
+    traces = SQLiteTraceRepository(database)
+    evaluations = SQLiteEvaluationRepository(database)
+    sessions = chat_manager or create_default_chat_manager(
+        tools=build_chat_tools(database),
+        traces=traces,
+        environ=environ,
+    )
+    runner = EvaluationRunner(
+        sessions,
+        evaluations,
+        TraceEvaluator(traces, evaluations),
+    )
+    try:
+        return await runner.execute(case_id)
+    finally:
+        await sessions.close_all()
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -252,6 +294,21 @@ def main() -> None:
         except (KeyError, EvaluationConflictError) as exc:
             parser.error(str(exc))
         print(result.model_dump_json(indent=2))
+        return
+
+    if args.command == "eval-run":
+        try:
+            execution = asyncio.run(
+                run_configured_evaluation(args.case_id, args.database)
+            )
+        except (
+            ChatConfigurationError,
+            EvaluationConflictError,
+            EvaluationExecutionError,
+            KeyError,
+        ) as exc:
+            parser.error(str(exc))
+        print(execution.model_dump_json(indent=2))
         return
 
     python_status = sys.version.split()[0]
