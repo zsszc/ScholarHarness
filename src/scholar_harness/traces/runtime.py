@@ -30,6 +30,8 @@ class TracingRuntime(AgentRuntime):
         run = self._repository.create_run(self._runtime_type)
         self.last_run_id = run.id
         settled = False
+        terminal_status = "completed"
+        terminal_error: str | None = None
         try:
             async for event in self._runtime.stream(prompt):
                 self._repository.update_run_context(
@@ -40,6 +42,15 @@ class TracingRuntime(AgentRuntime):
                 self._repository.append_event(run.id, event)
                 if event.type == "agent_settled":
                     settled = True
+                    event_status = event.data.get("status")
+                    if event_status in {"failed", "aborted"}:
+                        terminal_status = event_status
+                if event.type == "agent_end":
+                    event_status = event.data.get("status")
+                    if event_status in {"failed", "aborted"}:
+                        terminal_status = event_status
+                    if event.data.get("error") is not None:
+                        terminal_error = str(event.data["error"])
                 yield event
         except (GeneratorExit, asyncio.CancelledError):
             self._repository.finish_run(run.id, "aborted")
@@ -49,7 +60,9 @@ class TracingRuntime(AgentRuntime):
             raise
         else:
             self._repository.finish_run(
-                run.id, "completed" if settled else "aborted"
+                run.id,
+                terminal_status if settled else "aborted",
+                error=terminal_error,
             )
 
     async def abort(self) -> None:

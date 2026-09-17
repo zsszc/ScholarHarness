@@ -176,6 +176,31 @@ async def test_tracing_runtime_completes_and_replays_in_order(tmp_path) -> None:
     assert [event.payload.get("delta") for event in replay[1:3]] == ["a", "a"]
 
 
+async def test_tracing_runtime_respects_normalized_terminal_status(tmp_path) -> None:
+    repository = SQLiteTraceRepository(tmp_path / "trace.db")
+    events = [
+        AgentEvent(
+            type="agent_end",
+            session_id="mini-session",
+            data={"status": "failed", "error": "max_tool_rounds"},
+        ),
+        AgentEvent(
+            type="agent_settled",
+            session_id="mini-session",
+            data={"status": "failed"},
+        ),
+    ]
+    runtime = TracingRuntime(FakeRuntime(events), repository, runtime_type="mini-py")
+
+    await runtime.start()
+    _ = [event async for event in runtime.stream("loop")]
+
+    assert runtime.last_run_id is not None
+    run = repository.get_run(runtime.last_run_id)
+    assert run.status == "failed"
+    assert run.error == "max_tool_rounds"
+
+
 def test_memory_repository_additively_migrates_provenance_columns(tmp_path) -> None:
     database = tmp_path / "old.db"
     with sqlite3.connect(database) as connection:

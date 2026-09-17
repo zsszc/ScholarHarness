@@ -44,6 +44,16 @@ class ToolRegistry:
     def schemas(self) -> dict[str, dict[str, Any]]:
         return {name: tool.json_schema for name, tool in self._tools.items()}
 
+    def definitions(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": tool.json_schema,
+            }
+            for tool in self._tools.values()
+        ]
+
     async def execute(self, name: str, arguments: Mapping[str, Any]) -> Mapping[str, Any]:
         tool = self.get(name)
         validated = tool.input_model.model_validate(arguments)

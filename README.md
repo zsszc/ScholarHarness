@@ -16,6 +16,7 @@ The repository currently contains the first vertical slice:
 - page-aware PDF ingestion with stable passage coordinates;
 - evidence-verified candidate memories with explicit confirmation and recall;
 - durable, redacted runtime traces and correlated tool executions;
+- an inspectable Python model/tool loop with abort, branching, compaction, and replay;
 - a FastAPI service exposing the tool bridge;
 - a thin Pi TypeScript extension that forwards tool calls to Python.
 
@@ -28,7 +29,7 @@ UI / API
    |                                      |
    |                              TypeScript bridge
    |                                      |
-   +-- MiniPyRuntime (planned)      HTTP tool calls
+   +-- MiniPyRuntime                HTTP tool calls
                                           |
                                   Python ToolRegistry
                                           |
@@ -143,6 +144,24 @@ GET /runs/{run_id}
 GET /runs/{run_id}/events
 GET /runs/{run_id}/tools
 ```
+
+## Educational Python runtime
+
+`MiniPyRuntime` implements the same `AgentRuntime` contract as Pi while keeping the
+agent loop visible in Python. A provider-specific `ModelAdapter` receives ordered
+`ModelMessage` objects and complete JSON-schema tool definitions, then returns a
+`ModelResponse` containing text and zero or more `ModelToolCall` objects.
+
+The runtime executes calls through the same `ToolRegistry`, returns structured tool
+errors to the model, stops repeated calls at a configurable bound, and emits trace-
+compatible tool events. Its append-only entries support incremental replay,
+branching from any stable entry, and explicit compaction nodes. Wrap it in
+`TracingRuntime(runtime, repository, runtime_type="mini-py")` to persist runs exactly
+like Pi runs.
+
+The core deliberately contains no provider SDK. A hosted or local model adapter is
+an integration at the model boundary, while session and tool-loop behavior stays
+testable without network access.
 
 ## Pi bridge
 

@@ -30,6 +30,11 @@ Pi is integrated through its JSONL RPC mode. The client assigns an id to each
 command, correlates responses without blocking the event stream, and publishes
 unsolicited runtime events through an async iterator.
 
+`MiniPyRuntime` implements the same contract with a provider-neutral `ModelAdapter`.
+It owns an explicit bounded model/tool loop, append-only in-memory session entries,
+path-scoped branching, cooperative abort, and visible compaction nodes. It reuses
+`ToolRegistry`; model adapters never execute tools directly.
+
 `TracingRuntime` can wrap any runtime implementation. It persists ordered, redacted
 events and correlated tool executions while forwarding normalized events unchanged.
 Stable session entries use idempotency keys; live deltas remain distinct for replay.
