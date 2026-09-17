@@ -11,6 +11,8 @@ The repository currently contains the first vertical slice:
 - an append-only session-tree projector;
 - a reusable Python tool registry;
 - a persistent SQLite/FTS5 paper repository with `search_papers` and `read_passage` tools;
+- deterministic hybrid lexical/vector retrieval with inspectable RRF rankings;
+- strict quote-to-passage validation through the `validate_citation` tool;
 - page-aware PDF ingestion with stable passage coordinates;
 - evidence-verified candidate memories with explicit confirmation and recall;
 - durable, redacted runtime traces and correlated tool executions;
@@ -82,6 +84,24 @@ Search it:
 curl -X POST http://127.0.0.1:8765/internal/tools/search_papers \
   -H 'content-type: application/json' \
   -d '{"query": "evidence memory", "limit": 5}'
+```
+
+`search_papers` defaults to `hybrid` retrieval and accepts `"mode": "lexical"`
+for a BM25-only search. Hybrid hits include `lexical_rank`, `vector_rank`, and the
+fused `score`, making the agent's retrieval decision inspectable. The built-in
+feature-hashing vectors are an offline development baseline; the provider boundary
+is designed for a later sentence-transformer or hosted embedding adapter.
+
+Before presenting a direct quote, validate its exact coordinate:
+
+```bash
+curl -X POST http://127.0.0.1:8765/internal/tools/validate_citation \
+  -H 'content-type: application/json' \
+  -d '{
+    "paper_id": "demo-paper",
+    "passage_id": "p1",
+    "quote": "Long-term memory requires evidence provenance."
+  }'
 ```
 
 Import a digitally readable PDF:

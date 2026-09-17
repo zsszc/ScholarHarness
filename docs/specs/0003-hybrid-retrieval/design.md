@@ -42,7 +42,8 @@ paper state.
 ## Ranking
 
 Lexical candidates come from FTS5 BM25. Vector candidates are all compatible stored
-vectors ordered by cosine similarity. Each list is assigned a one-based rank and
+vectors at or above cosine similarity `0.05`, ordered by similarity. The threshold
+filters feature-hash collision noise. Each list is assigned a one-based rank and
 combined with RRF. Ties use `(paper_id, passage_id)` for reproducibility.
 
 Lexical mode retains the existing BM25 behavior. Hybrid results add:

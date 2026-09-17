@@ -65,6 +65,6 @@ status. Rejected and superseded rows remain stored for audit and evaluation.
 1. **Runtime foundation**: Pi RPC, tools, session projection, tests.
 2. **Literature ingestion**: PDF parsing, page-aware chunks, SQLite FTS5.
 3. **Memory and traces**: verified candidates, provenance, replayable runtime events.
-4. **Hybrid retrieval**: embeddings, reranking, citation validation.
+4. **Hybrid retrieval**: offline embedding baseline, RRF, citation validation.
 5. **MiniPyRuntime**: educational tool loop, branching, compaction and replay.
 6. **Workbench UI**: chat, session graph, tool inspector and runtime comparison.

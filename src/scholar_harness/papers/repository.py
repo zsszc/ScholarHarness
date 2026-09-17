@@ -2,19 +2,24 @@ from __future__ import annotations
 
 import re
 import sqlite3
+import struct
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Protocol
 
+from scholar_harness.papers.embeddings import EmbeddingProvider, HashingEmbeddingProvider
 from scholar_harness.papers.models import Paper, Passage
 
 _TOKEN_PATTERN = re.compile(r"[\w\u4e00-\u9fff]+", re.UNICODE)
+_MIN_VECTOR_SIMILARITY = 0.05
 
 
 class PaperRepository(Protocol):
     def add(self, paper: Paper) -> None: ...
 
-    def search(self, query: str, limit: int = 5) -> list[Mapping[str, object]]: ...
+    def search(
+        self, query: str, limit: int = 5, mode: str = "hybrid"
+    ) -> list[Mapping[str, object]]: ...
 
     def read(self, paper_id: str, passage_id: str) -> Mapping[str, object]: ...
 
@@ -46,7 +51,11 @@ class InMemoryPaperRepository(PassageResultMixin):
     def add(self, paper: Paper) -> None:
         self._papers[paper.id] = paper
 
-    def search(self, query: str, limit: int = 5) -> list[Mapping[str, object]]:
+    def search(
+        self, query: str, limit: int = 5, mode: str = "hybrid"
+    ) -> list[Mapping[str, object]]:
+        if mode not in {"lexical", "hybrid"}:
+            raise ValueError(f"Unknown retrieval mode: {mode}")
         query_tokens = set(self._tokens(query))
         hits: list[Mapping[str, object]] = []
         for paper in self._papers.values():
@@ -60,7 +69,17 @@ class InMemoryPaperRepository(PassageResultMixin):
                 score = overlap + (title_overlap * 2)
                 hits.append(self._hit(paper, passage, float(score)))
         hits.sort(key=lambda item: (-float(item["score"]), str(item["paper_id"])))
-        return hits[:limit]
+        results = []
+        for rank, hit in enumerate(hits[:limit], start=1):
+            results.append(
+                {
+                    **hit,
+                    "retrieval_mode": mode,
+                    "lexical_rank": rank,
+                    "vector_rank": None,
+                }
+            )
+        return results
 
     def read(self, paper_id: str, passage_id: str) -> Mapping[str, object]:
         paper = self._papers.get(paper_id)
@@ -74,10 +93,15 @@ class InMemoryPaperRepository(PassageResultMixin):
 
 
 class SQLitePaperRepository(PassageResultMixin):
-    """Persistent paper storage with a deterministic SQLite FTS5 baseline."""
+    """Persistent paper storage with FTS5 and exact local vector retrieval."""
 
-    def __init__(self, database: Path | str) -> None:
+    def __init__(
+        self,
+        database: Path | str,
+        embedding_provider: EmbeddingProvider | None = None,
+    ) -> None:
         self.database = Path(database)
+        self.embedding_provider = embedding_provider or HashingEmbeddingProvider()
         self.database.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
@@ -115,11 +139,30 @@ class SQLitePaperRepository(PassageResultMixin):
                     page UNINDEXED,
                     section
                 );
+
+                CREATE TABLE IF NOT EXISTS passage_embeddings (
+                    paper_id TEXT NOT NULL,
+                    passage_id TEXT NOT NULL,
+                    provider TEXT NOT NULL,
+                    dimensions INTEGER NOT NULL,
+                    vector BLOB NOT NULL,
+                    PRIMARY KEY (paper_id, passage_id, provider),
+                    FOREIGN KEY (paper_id, passage_id)
+                        REFERENCES passages(paper_id, id) ON DELETE CASCADE
+                );
                 """
             )
 
     def add(self, paper: Paper) -> None:
         import json
+
+        embedding_texts = [f"{paper.title}\n{passage.text}" for passage in paper.passages]
+        vectors = self.embedding_provider.embed(embedding_texts)
+        if len(vectors) != len(paper.passages):
+            raise ValueError("Embedding provider returned an unexpected vector count")
+        for vector in vectors:
+            if len(vector) != self.embedding_provider.dimensions:
+                raise ValueError("Embedding provider returned an unexpected dimension")
 
         with self.connect() as connection:
             connection.execute(
@@ -162,8 +205,36 @@ class SQLitePaperRepository(PassageResultMixin):
                     for passage in paper.passages
                 ],
             )
+            connection.executemany(
+                """
+                INSERT INTO passage_embeddings
+                    (paper_id, passage_id, provider, dimensions, vector)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        paper.id,
+                        passage.id,
+                        self.embedding_provider.provider_id,
+                        self.embedding_provider.dimensions,
+                        self._pack_vector(vector),
+                    )
+                    for passage, vector in zip(paper.passages, vectors, strict=True)
+                ],
+            )
 
-    def search(self, query: str, limit: int = 5) -> list[Mapping[str, object]]:
+    @staticmethod
+    def _pack_vector(vector: list[float]) -> bytes:
+        return struct.pack(f"<{len(vector)}f", *vector)
+
+    @staticmethod
+    def _unpack_vector(data: bytes, dimensions: int) -> tuple[float, ...]:
+        expected_bytes = dimensions * 4
+        if len(data) != expected_bytes:
+            raise ValueError("Stored embedding has an invalid byte length")
+        return struct.unpack(f"<{dimensions}f", data)
+
+    def _lexical_search(self, query: str, limit: int) -> list[dict[str, object]]:
         tokens = self._tokens(query)
         if not tokens:
             return []
@@ -198,6 +269,96 @@ class SQLitePaperRepository(PassageResultMixin):
             }
             for row in rows
         ]
+
+    def _vector_search(self, query: str, limit: int) -> list[dict[str, object]]:
+        query_vector = self.embedding_provider.embed([query])[0]
+        if not any(query_vector):
+            return []
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT p.id AS paper_id, s.id AS passage_id, p.title, s.text,
+                       s.page, s.section, e.dimensions, e.vector
+                FROM passage_embeddings e
+                JOIN passages s ON s.paper_id = e.paper_id AND s.id = e.passage_id
+                JOIN papers p ON p.id = s.paper_id
+                WHERE e.provider = ? AND e.dimensions = ?
+                """,
+                (self.embedding_provider.provider_id, self.embedding_provider.dimensions),
+            ).fetchall()
+
+        hits: list[dict[str, object]] = []
+        for row in rows:
+            vector = self._unpack_vector(row["vector"], row["dimensions"])
+            similarity = sum(
+                left * right for left, right in zip(query_vector, vector, strict=True)
+            )
+            if similarity >= _MIN_VECTOR_SIMILARITY:
+                hits.append(
+                    {
+                        "paper_id": row["paper_id"],
+                        "passage_id": row["passage_id"],
+                        "title": row["title"],
+                        "page": row["page"],
+                        "section": row["section"],
+                        "text": row["text"],
+                        "score": float(similarity),
+                    }
+                )
+        hits.sort(
+            key=lambda item: (
+                -float(item["score"]),
+                str(item["paper_id"]),
+                str(item["passage_id"]),
+            )
+        )
+        return hits[:limit]
+
+    def search(
+        self, query: str, limit: int = 5, mode: str = "hybrid"
+    ) -> list[Mapping[str, object]]:
+        if mode not in {"lexical", "hybrid"}:
+            raise ValueError(f"Unknown retrieval mode: {mode}")
+        candidate_limit = max(limit * 4, 50)
+        lexical = self._lexical_search(query, candidate_limit)
+        if mode == "lexical":
+            return [
+                {
+                    **hit,
+                    "retrieval_mode": "lexical",
+                    "lexical_rank": rank,
+                    "vector_rank": None,
+                }
+                for rank, hit in enumerate(lexical[:limit], start=1)
+            ]
+
+        vector = self._vector_search(query, candidate_limit)
+        fused: dict[tuple[str, str], dict[str, object]] = {}
+        for component, rank_name in ((lexical, "lexical_rank"), (vector, "vector_rank")):
+            for rank, hit in enumerate(component, start=1):
+                key = (str(hit["paper_id"]), str(hit["passage_id"]))
+                result = fused.setdefault(
+                    key,
+                    {
+                        **hit,
+                        "score": 0.0,
+                        "retrieval_mode": "hybrid",
+                        "lexical_rank": None,
+                        "vector_rank": None,
+                    },
+                )
+                result[rank_name] = rank
+                result["score"] = float(result["score"]) + (1.0 / (60 + rank))
+
+        results = list(fused.values())
+        results.sort(
+            key=lambda item: (
+                -float(item["score"]),
+                str(item["paper_id"]),
+                str(item["passage_id"]),
+            )
+        )
+        return results[:limit]
 
     def read(self, paper_id: str, passage_id: str) -> Mapping[str, object]:
         with self.connect() as connection:

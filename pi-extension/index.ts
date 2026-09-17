@@ -23,9 +23,31 @@ export default function scholarHarnessBridge(pi: ExtensionAPI) {
     parameters: Type.Object({
       query: Type.String({ minLength: 1 }),
       limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 50, default: 5 })),
+      mode: Type.Optional(Type.Union([
+        Type.Literal("lexical"),
+        Type.Literal("hybrid"),
+      ], { default: "hybrid" })),
     }),
     async execute(_toolCallId, params) {
       const result = await callPythonTool("search_papers", params);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result) }],
+        details: result,
+      };
+    },
+  }));
+
+  pi.registerTool(defineTool({
+    name: "validate_citation",
+    label: "Validate Citation",
+    description: "Verify that a direct quote occurs at an exact paper coordinate.",
+    parameters: Type.Object({
+      paper_id: Type.String(),
+      passage_id: Type.String(),
+      quote: Type.String(),
+    }),
+    async execute(_toolCallId, params) {
+      const result = await callPythonTool("validate_citation", params);
       return {
         content: [{ type: "text", text: JSON.stringify(result) }],
         details: result,

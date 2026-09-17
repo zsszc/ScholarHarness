@@ -1,6 +1,6 @@
 # Hybrid retrieval and citation validation
 
-Status: Approved
+Status: Verified
 Date: 2026-09-17
 
 ## Problem
@@ -36,6 +36,8 @@ the cited paper coordinate before returning it to a user.
 
 - RRF uses `1 / (60 + rank)` for each contributing ranking. It is stable across
   incomparable BM25 and cosine score scales.
+- Vector candidates below cosine similarity `0.05` are discarded so an exact scan
+  does not turn every unrelated passage into a search result.
 - The built-in embedding provider uses signed feature hashing over normalized word
   and character n-gram features. It is an educational/offline baseline, not a claim
   of state-of-the-art semantic quality.
