@@ -13,6 +13,7 @@ The repository currently contains the first vertical slice:
 - a persistent SQLite/FTS5 paper repository with `search_papers` and `read_passage` tools;
 - page-aware PDF ingestion with stable passage coordinates;
 - evidence-verified candidate memories with explicit confirmation and recall;
+- durable, redacted runtime traces and correlated tool executions;
 - a FastAPI service exposing the tool bridge;
 - a thin Pi TypeScript extension that forwards tool calls to Python.
 
@@ -106,6 +107,22 @@ curl -X POST http://127.0.0.1:8765/memories/MEMORY_ID/confirm
 
 `recall_memory` searches only `confirmed` records. Rejected and superseded records
 remain auditable in SQLite but cannot silently influence the agent.
+
+## Runtime traces
+
+Wrap any runtime with `TracingRuntime` to persist ordered events, run status, and tool
+executions without coupling that runtime to SQLite. Stable Pi session entries are
+deduplicated by entry id; live streaming deltas remain separate for exact replay.
+Sensitive fields are recursively redacted and raw payloads are capped at 256 KiB.
+
+Trace inspection endpoints:
+
+```text
+GET /runs
+GET /runs/{run_id}
+GET /runs/{run_id}/events
+GET /runs/{run_id}/tools
+```
 
 ## Pi bridge
 

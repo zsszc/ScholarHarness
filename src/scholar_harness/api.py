@@ -12,6 +12,8 @@ from scholar_harness.papers.models import Paper
 from scholar_harness.papers.pdf import PdfIngestor
 from scholar_harness.papers.repository import PaperRepository, SQLitePaperRepository
 from scholar_harness.papers.tools import build_paper_tools
+from scholar_harness.traces.models import AgentRun, ToolExecution, TraceEvent
+from scholar_harness.traces.repository import SQLiteTraceRepository
 
 MAX_PDF_BYTES = 50 * 1024 * 1024
 
@@ -20,9 +22,11 @@ def create_app(
     repository: PaperRepository | None = None,
     pdf_ingestor: PdfIngestor | None = None,
     memory_repository: SQLiteMemoryRepository | None = None,
+    trace_repository: SQLiteTraceRepository | None = None,
 ) -> FastAPI:
     paper_repository = repository or SQLitePaperRepository("data/scholar_harness.db")
     memories = memory_repository or SQLiteMemoryRepository("data/scholar_harness.db")
+    traces = trace_repository or SQLiteTraceRepository("data/scholar_harness.db")
     ingestor = pdf_ingestor or PdfIngestor()
     tools = build_paper_tools(paper_repository)
     tools.extend(build_memory_tools(memories, paper_repository))
@@ -41,6 +45,7 @@ def create_app(
               <li><a href="/docs">OpenAPI tools</a></li>
               <li><a href="/health">Health check</a></li>
               <li><a href="/memories">Memory candidates</a></li>
+              <li><a href="/runs">Agent runs</a></li>
             </ul>
           </body>
         </html>
@@ -116,6 +121,33 @@ def create_app(
     async def reject_memory(memory_id: str) -> Memory:
         try:
             return memories.set_status(memory_id, "rejected")
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/runs")
+    async def list_runs(
+        limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    ) -> list[AgentRun]:
+        return traces.list_runs(limit=limit)
+
+    @app.get("/runs/{run_id}")
+    async def get_run(run_id: str) -> AgentRun:
+        try:
+            return traces.get_run(run_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/runs/{run_id}/events")
+    async def list_run_events(run_id: str) -> list[TraceEvent]:
+        try:
+            return traces.list_events(run_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/runs/{run_id}/tools")
+    async def list_run_tools(run_id: str) -> list[ToolExecution]:
+        try:
+            return traces.list_tool_executions(run_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 

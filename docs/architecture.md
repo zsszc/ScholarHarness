@@ -30,6 +30,10 @@ Pi is integrated through its JSONL RPC mode. The client assigns an id to each
 command, correlates responses without blocking the event stream, and publishes
 unsolicited runtime events through an async iterator.
 
+`TracingRuntime` can wrap any runtime implementation. It persists ordered, redacted
+events and correlated tool executions while forwarding normalized events unchanged.
+Stable session entries use idempotency keys; live deltas remain distinct for replay.
+
 ## Tool boundary
 
 Python tools are registered once in `ToolRegistry`. MiniPyRuntime will call the
@@ -60,7 +64,7 @@ status. Rejected and superseded rows remain stored for audit and evaluation.
 
 1. **Runtime foundation**: Pi RPC, tools, session projection, tests.
 2. **Literature ingestion**: PDF parsing, page-aware chunks, SQLite FTS5.
-3. **Hybrid retrieval**: embeddings, reranking, citation validation.
-4. **Memory engine**: candidate/confirmed/superseded memories with evidence.
+3. **Memory and traces**: verified candidates, provenance, replayable runtime events.
+4. **Hybrid retrieval**: embeddings, reranking, citation validation.
 5. **MiniPyRuntime**: educational tool loop, branching, compaction and replay.
 6. **Workbench UI**: chat, session graph, tool inspector and runtime comparison.

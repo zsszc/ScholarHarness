@@ -42,6 +42,8 @@ class SQLiteMemoryRepository:
                     confidence REAL NOT NULL,
                     source_session_id TEXT,
                     source_entry_id TEXT,
+                    trace_run_id TEXT,
+                    source_tool_call_id TEXT,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
@@ -62,6 +64,10 @@ class SQLiteMemoryRepository:
                 );
                 """
             )
+            self._ensure_column(connection, "memories", "trace_run_id", "TEXT")
+            self._ensure_column(
+                connection, "memories", "source_tool_call_id", "TEXT"
+            )
 
     def create_candidate(
         self,
@@ -73,6 +79,8 @@ class SQLiteMemoryRepository:
         evidence: list[MemoryEvidence],
         source_session_id: str | None = None,
         source_entry_id: str | None = None,
+        trace_run_id: str | None = None,
+        source_tool_call_id: str | None = None,
     ) -> Memory:
         memory_id = str(uuid.uuid4())
         now = datetime.now(UTC)
@@ -81,8 +89,9 @@ class SQLiteMemoryRepository:
                 """
                 INSERT INTO memories (
                     id, content, kind, scope, status, confidence,
-                    source_session_id, source_entry_id, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, 'candidate', ?, ?, ?, ?, ?)
+                    source_session_id, source_entry_id, trace_run_id,
+                    source_tool_call_id, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, 'candidate', ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     memory_id,
@@ -92,6 +101,8 @@ class SQLiteMemoryRepository:
                     confidence,
                     source_session_id,
                     source_entry_id,
+                    trace_run_id,
+                    source_tool_call_id,
                     now.isoformat(),
                     now.isoformat(),
                 ),
@@ -210,6 +221,22 @@ class SQLiteMemoryRepository:
             evidence=evidence,
             source_session_id=row["source_session_id"],
             source_entry_id=row["source_entry_id"],
+            trace_run_id=row["trace_run_id"],
+            source_tool_call_id=row["source_tool_call_id"],
             created_at=row["created_at"],
             updated_at=row["updated_at"],
         )
+
+    @staticmethod
+    def _ensure_column(
+        connection: sqlite3.Connection,
+        table: str,
+        column: str,
+        definition: str,
+    ) -> None:
+        columns = {
+            row["name"]
+            for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
+        }
+        if column not in columns:
+            connection.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")

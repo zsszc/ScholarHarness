@@ -40,8 +40,10 @@ Projection is idempotent by the unique `(run_id, tool_call_id)` key.
 ## Redaction and bounds
 
 Payloads are recursively copied. Dictionary values whose normalized keys match the
-configured secret markers become `[REDACTED]`. Redaction occurs before serialization
-or size measurement.
+configured secret markers, or end in one of those markers, become `[REDACTED]`.
+Camel-case keys are normalized first, so `accessToken` is protected while
+`totalTokens` remains useful telemetry. Redaction occurs before serialization or
+size measurement.
 
 If compact JSON exceeds 256 KiB, storage replaces it with:
 
@@ -75,4 +77,3 @@ automatic candidate generation.
 - Hash-deduplicating live events: identical deltas can be semantically distinct.
 - Storing unlimited raw tool results: unsafe for database growth and accidental
   credential retention.
-

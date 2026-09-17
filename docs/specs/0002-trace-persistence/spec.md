@@ -1,6 +1,6 @@
 # Persisted runtime traces
 
-Status: Approved
+Status: Verified
 Date: 2026-09-17
 
 ## Problem
@@ -38,8 +38,9 @@ tool call and branch that produced them, and evaluation cannot replay past behav
 - Raw JSON is capped at 256 KiB; oversized content stores a 32 KiB preview envelope.
 - Synced session entries use `entry:<entry_id>` idempotency keys. Ephemeral live events
   use a monotonic run-local sequence and are not deduplicated.
-- Keys containing `authorization`, `api_key`, `apikey`, `token`, `password`, `secret`,
-  `cookie`, or `credential` are redacted case-insensitively at every nesting level.
+- Keys matching or ending in `authorization`, `api_key`, `apikey`, `token`,
+  `password`, `secret`, `cookie`, or `credential` are redacted case-insensitively at
+  every nesting level. Token usage fields such as `totalTokens` remain observable.
 - Trace APIs are read-only. Deletion, retention, and blob storage are deferred.
 
 ## Acceptance criteria

@@ -40,6 +40,8 @@ def build_memory_tools(
             evidence=verified,
             source_session_id=arguments.source_session_id,
             source_entry_id=arguments.source_entry_id,
+            trace_run_id=arguments.trace_run_id,
+            source_tool_call_id=arguments.source_tool_call_id,
         )
         return {
             "memory": memory.model_dump(mode="json"),

@@ -74,6 +74,8 @@ export default function scholarHarnessBridge(pi: ExtensionAPI) {
       }), { minItems: 1, maxItems: 20 }),
       source_session_id: Type.Optional(Type.String()),
       source_entry_id: Type.Optional(Type.String()),
+      trace_run_id: Type.Optional(Type.String()),
+      source_tool_call_id: Type.Optional(Type.String()),
     }),
     async execute(_toolCallId, params) {
       const result = await callPythonTool("save_memory", params);

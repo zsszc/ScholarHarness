@@ -27,6 +27,8 @@ class Memory(BaseModel):
     evidence: list[MemoryEvidence]
     source_session_id: str | None = None
     source_entry_id: str | None = None
+    trace_run_id: str | None = None
+    source_tool_call_id: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -39,6 +41,8 @@ class SaveMemoryInput(BaseModel):
     evidence: list[MemoryEvidence] = Field(min_length=1, max_length=20)
     source_session_id: str | None = None
     source_entry_id: str | None = None
+    trace_run_id: str | None = None
+    source_tool_call_id: str | None = None
 
 
 class RecallMemoryInput(BaseModel):
