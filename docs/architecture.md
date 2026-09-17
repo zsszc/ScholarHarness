@@ -65,6 +65,12 @@ Results compare against the previous different run for the same case, making sco
 deltas and regressions available to local workflows and CI without coupling
 evaluation policy to a runtime.
 
+The Workbench Evaluation Lab remains a presentation and orchestration client. It
+submits typed case documents, selects terminal runs, and renders persisted checks
+and history through the public evaluation APIs. Input normalization is limited to
+comma-separated form ergonomics; validation, scoring, comparison, and regression
+classification stay in Python.
+
 ## Tool boundary
 
 Python tools are registered once in `ToolRegistry`. MiniPyRuntime will call the
@@ -104,3 +110,5 @@ status. Rejected and superseded rows remain stored for audit and evaluation.
    reconnect, abort, compaction, and branching controls.
 8. **Trace evaluations**: deterministic behavior checks, immutable evidence,
    regression baselines, HTTP workflows, and CI-friendly CLI output.
+9. **Evaluation workbench**: case authoring, terminal-run grading, evidence
+   inspection, score history, and responsive regression visualization.

@@ -25,7 +25,7 @@ def test_in_memory_catalog_is_deterministic_and_limited() -> None:
 
 
 def test_workbench_contains_all_areas_and_no_external_assets() -> None:
-    for page in ("overview", "chat", "runs", "memories", "library"):
+    for page in ("overview", "chat", "runs", "evaluations", "memories", "library"):
         assert f'data-page="{page}"' in WORKBENCH_HTML
     assert "Workbench navigation" in WORKBENCH_HTML
     assert "Content-Security-Policy" in WORKBENCH_HTML
@@ -57,3 +57,16 @@ def test_workbench_chat_uses_server_session_gateway() -> None:
     assert "api_key" not in WORKBENCH_HTML
     assert "base_url" not in WORKBENCH_HTML
     assert 'make("div",`chat-message ${role}`,text)' in WORKBENCH_HTML
+
+
+def test_workbench_evaluation_lab_uses_public_contracts_and_safe_evidence() -> None:
+    assert "Evaluation Lab" in WORKBENCH_HTML
+    assert 'request("/evaluations/cases?limit=500")' in WORKBENCH_HTML
+    assert 'request("/evaluations/results?limit=500")' in WORKBENCH_HTML
+    assert "/evaluations/cases/${encodeURIComponent(state.selectedCase.id)}/runs/" in WORKBENCH_HTML
+    assert 'make("pre","",pretty(check.expected))' in WORKBENCH_HTML
+    assert 'make("pre","",pretty(check.observed))' in WORKBENCH_HTML
+    assert 'value.split(",").map(item=>item.trim()).filter(Boolean)' in WORKBENCH_HTML
+    assert 'state.evaluationRuns.filter(run=>run.status!=="running")' in WORKBENCH_HTML
+    for metric in ("metric-evals", "metric-eval-passed", "metric-regressions"):
+        assert f'id="{metric}"' in WORKBENCH_HTML

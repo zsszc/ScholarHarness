@@ -253,6 +253,12 @@ Sessions are process-local and survive WebSocket reconnects, while their normali
 runs remain durable in the trace database. Restarting the API intentionally clears
 the live sessions.
 
+Select **Evaluation Lab** to author or edit deterministic cases, evaluate any
+terminal run, inspect each check's expected and observed evidence, and compare score
+history. Regression rows show the previous score and signed delta; all displayed
+values come from persisted backend result snapshots rather than browser-side
+rescoring.
+
 ## Pi bridge
 
 Start the Python service, then load `pi-extension/index.ts` as a Pi extension. The

@@ -1,6 +1,6 @@
 # Evaluation workbench
 
-Status: Approved
+Status: Verified
 Date: 2026-09-17
 
 ## Problem
