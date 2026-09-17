@@ -25,7 +25,7 @@ def test_in_memory_catalog_is_deterministic_and_limited() -> None:
 
 
 def test_workbench_contains_all_areas_and_no_external_assets() -> None:
-    for page in ("overview", "runs", "memories", "library"):
+    for page in ("overview", "chat", "runs", "memories", "library"):
         assert f'data-page="{page}"' in WORKBENCH_HTML
     assert "Workbench navigation" in WORKBENCH_HTML
     assert "Content-Security-Policy" in WORKBENCH_HTML
@@ -46,3 +46,14 @@ def test_workbench_uses_safe_dom_and_explicit_panel_states() -> None:
     assert "/internal/tools/search_papers" in WORKBENCH_HTML
     assert "lexical_rank" in WORKBENCH_HTML
     assert "vector_rank" in WORKBENCH_HTML
+
+
+def test_workbench_chat_uses_server_session_gateway() -> None:
+    assert "/chat/sessions" in WORKBENCH_HTML
+    assert "new WebSocket" in WORKBENCH_HTML
+    assert "OPENAI_MODEL" in WORKBENCH_HTML
+    for command in ("prompt", "abort", "compact", "fork", "entries"):
+        assert f'type:"{command}"' in WORKBENCH_HTML
+    assert "api_key" not in WORKBENCH_HTML
+    assert "base_url" not in WORKBENCH_HTML
+    assert 'make("div",`chat-message ${role}`,text)' in WORKBENCH_HTML

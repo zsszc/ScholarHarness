@@ -187,6 +187,24 @@ async def test_http_error_is_bounded_and_redacts_api_key() -> None:
     assert len(error) < 1_200
 
 
+async def test_transport_error_does_not_expose_provider_url() -> None:
+    secret_url = "https://provider-token@example.invalid/v1"
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("failed", request=request)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        adapter = OpenAICompatibleAdapter(
+            model="model", base_url=secret_url, client=client
+        )
+        with pytest.raises(ModelAdapterError) as caught:
+            await adapter.complete([ModelMessage(role="user", content="hi")], [])
+
+    error = str(caught.value)
+    assert error == "model_transport_error: ConnectError"
+    assert secret_url not in error
+
+
 async def test_rejects_invalid_local_messages_before_http() -> None:
     adapter = OpenAICompatibleAdapter(model="model")
 

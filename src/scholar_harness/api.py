@@ -1,10 +1,27 @@
 from __future__ import annotations
 
-from typing import Annotated
+import asyncio
+from contextlib import asynccontextmanager, suppress
+from typing import Annotated, Any
 
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import (
+    FastAPI,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import HTMLResponse, Response
 
+from scholar_harness.chat_sessions import (
+    ChatConfigurationError,
+    ChatSession,
+    ChatSessionInfo,
+    ChatSessionManager,
+    create_default_chat_manager,
+)
 from scholar_harness.memory.models import Memory, MemoryStatus
 from scholar_harness.memory.repository import SQLiteMemoryRepository
 from scholar_harness.memory.tools import build_memory_tools
@@ -24,6 +41,7 @@ def create_app(
     pdf_ingestor: PdfIngestor | None = None,
     memory_repository: SQLiteMemoryRepository | None = None,
     trace_repository: SQLiteTraceRepository | None = None,
+    chat_session_manager: ChatSessionManager | None = None,
 ) -> FastAPI:
     paper_repository = repository or SQLitePaperRepository("data/scholar_harness.db")
     memories = memory_repository or SQLiteMemoryRepository("data/scholar_harness.db")
@@ -31,7 +49,14 @@ def create_app(
     ingestor = pdf_ingestor or PdfIngestor()
     tools = build_paper_tools(paper_repository)
     tools.extend(build_memory_tools(memories, paper_repository))
-    app = FastAPI(title="ScholarHarness", version="0.1.0")
+    chats = chat_session_manager or create_default_chat_manager(tools=tools, traces=traces)
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        yield
+        await chats.close_all()
+
+    app = FastAPI(title="ScholarHarness", version="0.1.0", lifespan=lifespan)
 
     @app.get("/", response_class=HTMLResponse)
     async def index() -> str:
@@ -68,6 +93,146 @@ def create_app(
     @app.get("/internal/tools")
     async def tool_schemas() -> dict[str, object]:
         return tools.schemas()
+
+    @app.post("/chat/sessions", status_code=201)
+    async def create_chat_session() -> ChatSessionInfo:
+        try:
+            session = await chats.create()
+        except ChatConfigurationError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        return await session.info()
+
+    @app.get("/chat/sessions")
+    async def list_chat_sessions() -> list[ChatSessionInfo]:
+        return await chats.list()
+
+    @app.get("/chat/sessions/{session_id}")
+    async def get_chat_session(session_id: str) -> ChatSessionInfo:
+        session = await _get_chat_session(chats, session_id)
+        return await session.info()
+
+    @app.get("/chat/sessions/{session_id}/entries")
+    async def get_chat_entries(session_id: str) -> list[dict[str, Any]]:
+        session = await _get_chat_session(chats, session_id)
+        entries = await session.entries()
+        return [entry.model_dump(mode="json") for entry in entries]
+
+    @app.delete("/chat/sessions/{session_id}", status_code=204)
+    async def delete_chat_session(session_id: str) -> Response:
+        await chats.delete(session_id)
+        return Response(status_code=204)
+
+    @app.websocket("/chat/sessions/{session_id}/stream")
+    async def chat_stream(websocket: WebSocket, session_id: str) -> None:
+        await websocket.accept()
+        try:
+            session = await chats.get(session_id)
+        except KeyError:
+            await websocket.send_json(
+                _socket_error("session_not_found", f"Unknown chat session: {session_id}")
+            )
+            await websocket.close(code=4404)
+            return
+        if not session.attach():
+            await websocket.send_json(
+                _socket_error("session_connected", "Chat session already has a connection")
+            )
+            await websocket.close(code=4409)
+            return
+
+        outgoing: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+        sender = asyncio.create_task(_send_chat_messages(websocket, outgoing))
+        turn: asyncio.Task[None] | None = None
+        await outgoing.put(
+            {"type": "session_ready", "session": (await session.info()).model_dump(mode="json")}
+        )
+        try:
+            while True:
+                try:
+                    command = await websocket.receive_json()
+                except ValueError:
+                    await outgoing.put(
+                        _socket_error("invalid_json", "WebSocket message must be JSON")
+                    )
+                    continue
+                if not isinstance(command, dict):
+                    await outgoing.put(
+                        _socket_error("invalid_command", "Command must be a JSON object")
+                    )
+                    continue
+                command_type = command.get("type")
+                if command_type == "prompt":
+                    content = command.get("content")
+                    if not isinstance(content, str) or not content.strip():
+                        await outgoing.put(
+                            _socket_error("invalid_prompt", "Prompt content cannot be empty")
+                        )
+                    elif turn is not None and not turn.done():
+                        await outgoing.put(
+                            _socket_error("turn_active", "A turn is already active")
+                        )
+                    else:
+                        turn = asyncio.create_task(
+                            _produce_chat_turn(session, content, outgoing)
+                        )
+                elif command_type == "abort":
+                    await session.abort()
+                    await outgoing.put({"type": "command_result", "command": "abort"})
+                elif command_type == "compact":
+                    instruction = command.get("instructions")
+                    if instruction is not None and not isinstance(instruction, str):
+                        await outgoing.put(
+                            _socket_error(
+                                "invalid_command", "Compact instructions must be text"
+                            )
+                        )
+                        continue
+                    await _run_chat_command(
+                        outgoing,
+                        "compact",
+                        session.compact(instruction.strip() or None if instruction else None),
+                        session,
+                    )
+                elif command_type == "fork":
+                    entry_id = command.get("entry_id")
+                    if not isinstance(entry_id, str) or not entry_id:
+                        await outgoing.put(
+                            _socket_error("invalid_command", "Fork requires entry_id")
+                        )
+                        continue
+                    await _run_chat_command(
+                        outgoing, "fork", session.fork(entry_id), session
+                    )
+                elif command_type == "entries":
+                    try:
+                        entries = await session.entries()
+                    except Exception as exc:
+                        await outgoing.put(_socket_error("command_failed", str(exc)))
+                    else:
+                        await outgoing.put(
+                            {
+                                "type": "command_result",
+                                "command": "entries",
+                                "entries": [
+                                    entry.model_dump(mode="json") for entry in entries
+                                ],
+                                "session": (await session.info()).model_dump(mode="json"),
+                            }
+                        )
+                else:
+                    await outgoing.put(
+                        _socket_error("unknown_command", f"Unknown command: {command_type}")
+                    )
+        except WebSocketDisconnect:
+            pass
+        finally:
+            session.detach()
+            if turn is not None and not turn.done():
+                await session.abort()
+                await asyncio.gather(turn, return_exceptions=True)
+            await outgoing.put(None)
+            with suppress(Exception):
+                await sender
 
     @app.post("/papers", status_code=201)
     async def add_paper(paper: Paper) -> Paper:
@@ -164,3 +329,69 @@ def create_app(
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     return app
+
+
+async def _get_chat_session(
+    manager: ChatSessionManager, session_id: str
+) -> ChatSession:
+    try:
+        return await manager.get(session_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+async def _send_chat_messages(
+    websocket: WebSocket,
+    outgoing: asyncio.Queue[dict[str, Any] | None],
+) -> None:
+    while True:
+        message = await outgoing.get()
+        if message is None:
+            return
+        await websocket.send_json(message)
+
+
+async def _produce_chat_turn(
+    session: ChatSession,
+    prompt: str,
+    outgoing: asyncio.Queue[dict[str, Any] | None],
+) -> None:
+    error_message: str | None = None
+    try:
+        async for event in session.stream(prompt):
+            await outgoing.put({"type": "event", "event": event.model_dump(mode="json")})
+    except Exception as exc:
+        error_message = str(exc)
+        await outgoing.put(_socket_error("turn_failed", error_message))
+    finally:
+        result = {
+            "type": "turn_complete",
+            "session": (await session.info()).model_dump(mode="json"),
+        }
+        if error_message is not None:
+            result["error"] = error_message
+        await outgoing.put(result)
+
+
+async def _run_chat_command(
+    outgoing: asyncio.Queue[dict[str, Any] | None],
+    command: str,
+    operation: Any,
+    session: ChatSession,
+) -> None:
+    try:
+        await operation
+    except (KeyError, RuntimeError, ValueError) as exc:
+        await outgoing.put(_socket_error("command_failed", str(exc)))
+    else:
+        await outgoing.put(
+            {
+                "type": "command_result",
+                "command": command,
+                "session": (await session.info()).model_dump(mode="json"),
+            }
+        )
+
+
+def _socket_error(code: str, message: str) -> dict[str, str]:
+    return {"type": "error", "code": code, "message": message}

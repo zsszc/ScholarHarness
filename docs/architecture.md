@@ -8,6 +8,7 @@ ScholarHarness deliberately separates runtime state from research knowledge.
 | --- | --- |
 | Active model turn and context | Agent runtime (Pi or MiniPy) |
 | Pi session entries and branch leaf | Pi |
+| Browser MiniPy session lifecycle | ScholarHarness API process |
 | Normalized trace projection | ScholarHarness |
 | Papers, passages, citations | ScholarHarness |
 | Long-term memories and evidence | ScholarHarness |
@@ -40,10 +41,17 @@ internal messages and tool definitions to Chat Completions function calls over
 HTTP, but remains outside session, tool execution, and trace ownership. The CLI
 composes it with MiniPy rather than introducing provider concerns into the runtime.
 
-The local workbench is a thin HTTP client of the same paper, memory, and trace APIs.
-It has no privileged SQLite path: memory review still crosses the explicit status
-endpoints, passage search still crosses `ToolRegistry`, and trace payloads arrive
-after backend redaction and size bounding.
+The local workbench is a thin HTTP/WebSocket client of the same paper, memory,
+trace, and runtime contracts. It has no privileged SQLite path: memory review still
+crosses the explicit status endpoints, passage search still crosses `ToolRegistry`,
+and trace payloads arrive after backend redaction and size bounding.
+
+`ChatSessionManager` composes one independent MiniPy and tracing runtime per browser
+session. Sessions and branch entries are deliberately process-local, while emitted
+runs are durable. The browser can manage prompts, abort, compaction, forks, and
+entry inspection through a normalized WebSocket protocol, but it cannot choose a
+provider URL or send credentials. Application shutdown closes every provider
+adapter owned by the manager.
 
 `TracingRuntime` can wrap any runtime implementation. It persists ordered, redacted
 events and correlated tool executions while forwarding normalized events unchanged.
@@ -82,4 +90,7 @@ status. Rejected and superseded rows remain stored for audit and evaluation.
 3. **Memory and traces**: verified candidates, provenance, replayable runtime events.
 4. **Hybrid retrieval**: offline embedding baseline, RRF, citation validation.
 5. **MiniPyRuntime**: educational tool loop, branching, compaction and replay.
-6. **Workbench UI**: chat, session graph, tool inspector and runtime comparison.
+6. **Observability workbench**: run timelines, tool inspector, memory review, and
+   literature search.
+7. **Browser chat gateway**: server-owned MiniPy sessions, live normalized events,
+   reconnect, abort, compaction, and branching controls.

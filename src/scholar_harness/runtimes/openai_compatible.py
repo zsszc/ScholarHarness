@@ -66,10 +66,13 @@ class OpenAICompatibleAdapter(ModelAdapter):
                 headers=headers,
             )
         except httpx.HTTPError as exc:
-            raise ModelAdapterError(f"model_transport_error: {exc}") from exc
+            raise ModelAdapterError(
+                f"model_transport_error: {type(exc).__name__}"
+            ) from exc
 
         if not response.is_success:
             preview = response.text[:_ERROR_PREVIEW_CHARS]
+            preview = preview.replace(self.base_url, "[REDACTED_URL]")
             if self.api_key:
                 preview = preview.replace(self.api_key, "[REDACTED]")
             raise ModelAdapterError(
