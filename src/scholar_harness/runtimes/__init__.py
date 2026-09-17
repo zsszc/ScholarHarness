@@ -7,6 +7,10 @@ from scholar_harness.runtimes.model import (
     ModelToolCall,
     ModelToolDefinition,
 )
+from scholar_harness.runtimes.openai_compatible import (
+    ModelAdapterError,
+    OpenAICompatibleAdapter,
+)
 from scholar_harness.runtimes.pi_rpc import PiRpcClient, PiRuntime
 
 __all__ = [
@@ -17,6 +21,8 @@ __all__ = [
     "ModelResponse",
     "ModelToolCall",
     "ModelToolDefinition",
+    "ModelAdapterError",
+    "OpenAICompatibleAdapter",
     "PiRpcClient",
     "PiRuntime",
 ]

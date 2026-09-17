@@ -35,6 +35,11 @@ It owns an explicit bounded model/tool loop, append-only in-memory session entri
 path-scoped branching, cooperative abort, and visible compaction nodes. It reuses
 `ToolRegistry`; model adapters never execute tools directly.
 
+`OpenAICompatibleAdapter` is the first concrete model boundary. It translates the
+internal messages and tool definitions to Chat Completions function calls over
+HTTP, but remains outside session, tool execution, and trace ownership. The CLI
+composes it with MiniPy rather than introducing provider concerns into the runtime.
+
 `TracingRuntime` can wrap any runtime implementation. It persists ordered, redacted
 events and correlated tool executions while forwarding normalized events unchanged.
 Stable session entries use idempotency keys; live deltas remain distinct for replay.

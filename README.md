@@ -163,6 +163,29 @@ The core deliberately contains no provider SDK. A hosted or local model adapter 
 an integration at the model boundary, while session and tool-loop behavior stays
 testable without network access.
 
+Run the Python loop against an OpenAI-compatible Chat Completions endpoint:
+
+```bash
+export OPENAI_API_KEY="your-key"
+export OPENAI_MODEL="your-model-id"
+uv run scholar-harness chat
+```
+
+For an OpenAI-compatible local server, the key may be omitted:
+
+```bash
+OPENAI_MODEL="local-model" \
+OPENAI_BASE_URL="http://127.0.0.1:11434/v1" \
+uv run scholar-harness chat
+```
+
+Use `--prompt "..."` for one turn and exit. Interactive mode provides `/entries`,
+`/fork ENTRY_ID`, `/compact [instructions]`, `/help`, and `/exit`. Runs are traced
+to `data/scholar_harness.db` by default; use `--no-trace` only when an unpersisted
+session is intentional. The secret value is read from `OPENAI_API_KEY` (or the
+environment-variable name selected by `--api-key-env`) and is never accepted as a
+CLI argument.
+
 ## Pi bridge
 
 Start the Python service, then load `pi-extension/index.ts` as a Pi extension. The
