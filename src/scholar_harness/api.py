@@ -22,6 +22,13 @@ from scholar_harness.chat_sessions import (
     ChatSessionManager,
     create_default_chat_manager,
 )
+from scholar_harness.evaluations.models import (
+    EvaluationCase,
+    EvaluationCaseInput,
+    EvaluationResult,
+)
+from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
+from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
 from scholar_harness.memory.models import Memory, MemoryStatus
 from scholar_harness.memory.repository import SQLiteMemoryRepository
 from scholar_harness.memory.tools import build_memory_tools
@@ -42,10 +49,13 @@ def create_app(
     memory_repository: SQLiteMemoryRepository | None = None,
     trace_repository: SQLiteTraceRepository | None = None,
     chat_session_manager: ChatSessionManager | None = None,
+    evaluation_repository: SQLiteEvaluationRepository | None = None,
 ) -> FastAPI:
     paper_repository = repository or SQLitePaperRepository("data/scholar_harness.db")
     memories = memory_repository or SQLiteMemoryRepository("data/scholar_harness.db")
     traces = trace_repository or SQLiteTraceRepository("data/scholar_harness.db")
+    evaluations = evaluation_repository or SQLiteEvaluationRepository(traces.database)
+    evaluator = TraceEvaluator(traces, evaluations)
     ingestor = pdf_ingestor or PdfIngestor()
     tools = build_paper_tools(paper_repository)
     tools.extend(build_memory_tools(memories, paper_repository))
@@ -325,6 +335,58 @@ def create_app(
     async def list_run_tools(run_id: str) -> list[ToolExecution]:
         try:
             return traces.list_tool_executions(run_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/evaluations/cases", status_code=201)
+    async def create_evaluation_case(value: EvaluationCaseInput) -> EvaluationCase:
+        return evaluations.create_case(value)
+
+    @app.put("/evaluations/cases/{case_id}")
+    async def update_evaluation_case(
+        case_id: str, value: EvaluationCaseInput
+    ) -> EvaluationCase:
+        try:
+            return evaluations.update_case(case_id, value)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/evaluations/cases")
+    async def list_evaluation_cases(
+        limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    ) -> list[EvaluationCase]:
+        return evaluations.list_cases(limit=limit)
+
+    @app.get("/evaluations/cases/{case_id}")
+    async def get_evaluation_case(case_id: str) -> EvaluationCase:
+        try:
+            return evaluations.get_case(case_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/evaluations/cases/{case_id}/runs/{run_id}", status_code=201)
+    async def evaluate_trace_run(case_id: str, run_id: str) -> EvaluationResult:
+        try:
+            return evaluator.evaluate(case_id, run_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except EvaluationConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.get("/evaluations/results")
+    async def list_evaluation_results(
+        case_id: Annotated[str | None, Query()] = None,
+        run_id: Annotated[str | None, Query()] = None,
+        limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    ) -> list[EvaluationResult]:
+        return evaluations.list_results(
+            case_id=case_id, run_id=run_id, limit=limit
+        )
+
+    @app.get("/evaluations/results/{result_id}")
+    async def get_evaluation_result(result_id: str) -> EvaluationResult:
+        try:
+            return evaluations.get_result(result_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 

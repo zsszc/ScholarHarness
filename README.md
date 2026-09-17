@@ -19,6 +19,7 @@ The repository currently contains the first vertical slice:
 - an inspectable Python model/tool loop with abort, branching, compaction, and replay;
 - a local observability workbench for runs, tools, memory review, and library search;
 - a server-owned browser chat gateway with live events and session controls;
+- deterministic trace evaluations with evidence checks and regression deltas;
 - a FastAPI service exposing the tool bridge;
 - a thin Pi TypeScript extension that forwards tool calls to Python.
 
@@ -154,6 +155,47 @@ GET /runs/{run_id}
 GET /runs/{run_id}/events
 GET /runs/{run_id}/tools
 ```
+
+## Deterministic evaluations
+
+Evaluation cases turn completed traces into explainable regression signals without
+calling another model. Expectations can require or forbid tools, bound tool calls
+and duration, require successful citation validation, check terminal status, and
+assert case-insensitive answer substrings. Every check records expected and observed
+evidence, and each result compares its score with the previous run for that case.
+
+Create a case through the API:
+
+```bash
+curl -X POST http://127.0.0.1:8765/evaluations/cases \
+  -H 'content-type: application/json' \
+  -d '{
+    "name": "Evidence-grounded answer",
+    "prompt": "Find and cite evidence about agent memory.",
+    "expectations": {
+      "required_tools": ["search_papers", "validate_citation"],
+      "require_citation_validation": true,
+      "answer_contains": ["evidence"],
+      "terminal_status": "completed"
+    },
+    "pass_threshold": 1.0
+  }'
+```
+
+Evaluate an existing run through HTTP or produce CI-friendly JSON from the CLI:
+
+```bash
+curl -X POST \
+  http://127.0.0.1:8765/evaluations/cases/CASE_ID/runs/RUN_ID
+
+uv run scholar-harness eval \
+  --case CASE_ID \
+  --run RUN_ID \
+  --database data/scholar_harness.db
+```
+
+Evaluation results snapshot the case definition used at evaluation time. Editing a
+case affects future evaluations but does not rewrite existing evidence.
 
 ## Educational Python runtime
 

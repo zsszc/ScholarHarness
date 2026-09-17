@@ -13,6 +13,7 @@ ScholarHarness deliberately separates runtime state from research knowledge.
 | Papers, passages, citations | ScholarHarness |
 | Long-term memories and evidence | ScholarHarness |
 | Retrieval and citation evaluation | ScholarHarness |
+| Deterministic run evaluation and baselines | ScholarHarness |
 
 Runtime session contents are projected for display and evaluation, but are not
 silently rewritten by the Python service.
@@ -57,6 +58,13 @@ adapter owned by the manager.
 events and correlated tool executions while forwarding normalized events unchanged.
 Stable session entries use idempotency keys; live deltas remain distinct for replay.
 
+`TraceEvaluator` is downstream of trace persistence and never calls the model. It
+combines an editable evaluation case with an immutable terminal run, emits one
+evidence-bearing check per expectation, and persists a case snapshot plus score.
+Results compare against the previous different run for the same case, making score
+deltas and regressions available to local workflows and CI without coupling
+evaluation policy to a runtime.
+
 ## Tool boundary
 
 Python tools are registered once in `ToolRegistry`. MiniPyRuntime will call the
@@ -94,3 +102,5 @@ status. Rejected and superseded rows remain stored for audit and evaluation.
    literature search.
 7. **Browser chat gateway**: server-owned MiniPy sessions, live normalized events,
    reconnect, abort, compaction, and branching controls.
+8. **Trace evaluations**: deterministic behavior checks, immutable evidence,
+   regression baselines, HTTP workflows, and CI-friendly CLI output.

@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from scholar_harness.chat import build_chat_tools, run_chat
+from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
+from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
 from scholar_harness.runtimes.base import AgentRuntime
 from scholar_harness.runtimes.mini_py import MiniPyRuntime
 from scholar_harness.runtimes.model import ModelAdapter
@@ -63,6 +65,17 @@ def build_parser() -> argparse.ArgumentParser:
     chat.add_argument("--prompt", help="Run one prompt and exit instead of interactive mode")
     chat.add_argument("--no-trace", action="store_false", dest="trace")
     chat.set_defaults(trace=True)
+
+    evaluate = commands.add_parser(
+        "eval", help="Evaluate an existing trace run against a deterministic case"
+    )
+    evaluate.add_argument("--case", required=True, dest="case_id")
+    evaluate.add_argument("--run", required=True, dest="run_id")
+    evaluate.add_argument(
+        "--database",
+        type=Path,
+        default=Path("data/scholar_harness.db"),
+    )
 
     smoke = commands.add_parser("pi-smoke", help="Run a real Pi RPC and extension smoke test")
     smoke.add_argument(
@@ -227,6 +240,18 @@ def main() -> None:
         except ValueError as exc:
             parser.error(str(exc))
         asyncio.run(run_configured_chat(config))
+        return
+
+    if args.command == "eval":
+        evaluator = TraceEvaluator(
+            SQLiteTraceRepository(args.database),
+            SQLiteEvaluationRepository(args.database),
+        )
+        try:
+            result = evaluator.evaluate(args.case_id, args.run_id)
+        except (KeyError, EvaluationConflictError) as exc:
+            parser.error(str(exc))
+        print(result.model_dump_json(indent=2))
         return
 
     python_status = sys.version.split()[0]
