@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
-from collections.abc import AsyncIterator, Awaitable
+from collections.abc import AsyncIterator, Awaitable, Sequence
 from typing import Any, TypeVar
 
 from scholar_harness.core.events import AgentEvent
@@ -38,6 +38,8 @@ class MiniPyRuntime(AgentRuntime):
         compaction_char_limit: int = 4_000,
         session_id: str | None = None,
         context_provider: TurnContextProvider | None = None,
+        initial_entries: Sequence[AgentEvent] = (),
+        active_leaf_id: str | None = None,
     ) -> None:
         if max_tool_rounds < 1:
             raise ValueError("max_tool_rounds must be at least 1")
@@ -56,6 +58,7 @@ class MiniPyRuntime(AgentRuntime):
         self._closed = False
         self._turn_active = False
         self._abort_event: asyncio.Event | None = None
+        self._restore_entries(initial_entries, active_leaf_id)
 
     @property
     def session_id(self) -> str:
@@ -299,6 +302,35 @@ class MiniPyRuntime(AgentRuntime):
         self._entries.append(entry)
         self._active_leaf_id = entry_id
         return entry
+
+    def _restore_entries(
+        self,
+        entries: Sequence[AgentEvent],
+        active_leaf_id: str | None,
+    ) -> None:
+        restored: list[AgentEvent] = []
+        positions: dict[str, int] = {}
+        for source in entries:
+            entry = source.model_copy(deep=True)
+            if entry.session_id != self._session_id:
+                raise ValueError("Restored entry belongs to a different session")
+            if entry.entry_id is None:
+                raise ValueError("Restored entry is missing an id")
+            if entry.entry_id in positions:
+                raise ValueError(f"Duplicate restored entry id: {entry.entry_id}")
+            if entry.parent_id is not None and entry.parent_id not in positions:
+                raise ValueError(
+                    f"Restored entry has an unknown or forward parent: {entry.parent_id}"
+                )
+            positions[entry.entry_id] = len(restored)
+            restored.append(entry)
+        if restored and active_leaf_id is None:
+            raise ValueError("Restored non-empty session requires an active leaf")
+        if active_leaf_id is not None and active_leaf_id not in positions:
+            raise ValueError(f"Unknown restored active leaf: {active_leaf_id}")
+        self._entries = restored
+        self._entry_positions = positions
+        self._active_leaf_id = active_leaf_id
 
     def _active_path(self) -> list[AgentEvent]:
         if self._active_leaf_id is None:
