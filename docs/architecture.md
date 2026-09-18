@@ -86,6 +86,11 @@ normalization is limited to comma-separated form ergonomics; provider selection,
 execution, validation, scoring, comparison, and regression classification stay in
 Python.
 
+Its Suite workspace follows the same boundary. The browser owns only an editable
+ordered list of case ids and presentation selection state. It creates or replaces
+suite definitions, requests server-side execution, and renders immutable aggregate
+snapshots. Suite pass state and item outcomes are never recalculated in JavaScript.
+
 ## Tool boundary
 
 Python tools are registered once in `ToolRegistry`. MiniPyRuntime will call the
@@ -131,3 +136,5 @@ status. Rejected and superseded rows remain stored for audit and evaluation.
     cleanup, safe failure evidence, and API/CLI/Workbench entry points.
 11. **Evaluation suites**: ordered multi-case regression gates, immutable aggregate
     history, failure isolation, HTTP workflows, and CI-friendly CLI output.
+12. **Suite workbench**: ordered suite authoring, aggregate execution/history,
+    item-level diagnostics, and overview regression-gate metrics.

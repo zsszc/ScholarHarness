@@ -76,3 +76,27 @@ def test_workbench_evaluation_lab_uses_public_contracts_and_safe_evidence() -> N
     assert 'state.evaluationRuns.filter(run=>run.status!=="running")' in WORKBENCH_HTML
     for metric in ("metric-evals", "metric-eval-passed", "metric-regressions"):
         assert f'id="{metric}"' in WORKBENCH_HTML
+
+
+def test_workbench_suite_workspace_uses_ordered_public_contracts() -> None:
+    assert 'data-page="evaluation-suites"' in WORKBENCH_HTML
+    assert 'data-state="evaluation-suites"' in WORKBENCH_HTML
+    assert 'id="eval-suite-form"' in WORKBENCH_HTML
+    assert 'id="eval-suite-members"' in WORKBENCH_HTML
+    assert 'id="execute-eval-suite"' in WORKBENCH_HTML
+    assert 'request("/evaluations/suites?limit=500")' in WORKBENCH_HTML
+    assert 'request("/evaluations/suite-runs?limit=500")' in WORKBENCH_HTML
+    assert (
+        "/evaluations/suites/${encodeURIComponent(state.selectedSuite.id)}/execute"
+        in WORKBENCH_HTML
+    )
+    assert "case_ids:[...state.suiteDraftCaseIds]" in WORKBENCH_HTML
+    assert "suiteDraftName" in WORKBENCH_HTML
+    assert 'byId("eval-suite-name").addEventListener("input"' in WORKBENCH_HTML
+    assert "moveSuiteCase(index,offset)" in WORKBENCH_HTML
+    assert "removeSuiteCase(index)" in WORKBENCH_HTML
+    assert "item.runtime_error||\"—\"" in WORKBENCH_HTML
+    assert "item.error||\"—\"" in WORKBENCH_HTML
+    assert '"metric-suite-runs"' in WORKBENCH_HTML
+    assert '"metric-suite-passed"' in WORKBENCH_HTML
+    assert "runs.filter(run=>run.passed).length" in WORKBENCH_HTML

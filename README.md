@@ -227,6 +227,11 @@ Suites run cases sequentially in fresh sessions and persist an immutable aggrega
 with ordered item snapshots, pass/fail/error counts, trace ids, and result ids. An
 orchestration error is reduced to a safe category and does not hide later cases.
 
+In the Workbench, open **Evaluation Lab → Suites** to create or edit the ordered
+case membership, move cases up or down, execute the regression gate, and inspect
+aggregate history plus every case outcome. Overview reports total and passing suite
+runs from the same persisted API contract.
+
 ## Educational Python runtime
 
 `MiniPyRuntime` implements the same `AgentRuntime` contract as Pi while keeping the
