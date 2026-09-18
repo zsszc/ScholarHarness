@@ -112,6 +112,17 @@ ordered list of case ids and presentation selection state. It creates or replace
 suite definitions, requests server-side execution, and renders immutable aggregate
 snapshots. Suite pass state and item outcomes are never recalculated in JavaScript.
 
+## Runtime parity boundary
+
+Pi and MiniPy traces are compared after persistence, never by coupling the two
+runtimes. `RuntimeParityService` projects normalized lifecycle order, terminal
+status, tool outcomes, context statuses, and assembled assistant output from each
+run. Consecutive text deltas collapse into one lifecycle node so provider chunking
+does not affect parity. The default report compares semantic structure and output presence while
+discarding ids, timestamps, durations, and provider-only payloads. Exact assistant
+text is opt-in so nondeterministic prose does not create false architectural
+failures. Versioned JSON and exit code 1 make the same report usable in CI.
+
 ## Tool boundary
 
 Python tools are registered once in `ToolRegistry`. MiniPyRuntime will call the
@@ -190,3 +201,5 @@ the policy never mutates memory status.
     lazy provider hydration, restart continuation, and explicit durable deletion.
 18. **Auditable memory supersession**: atomic reviewed replacement links, trust-
     boundary validation, chain prevention, and recall-safe consolidation.
+19. **Runtime parity reports**: versioned semantic trace projection, explainable
+    Pi/MiniPy contract checks, privacy-aware output comparison, and CI exit semantics.

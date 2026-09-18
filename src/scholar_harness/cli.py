@@ -33,6 +33,7 @@ from scholar_harness.runtimes.mini_py import MiniPyRuntime
 from scholar_harness.runtimes.model import ModelAdapter
 from scholar_harness.runtimes.openai_compatible import OpenAICompatibleAdapter
 from scholar_harness.runtimes.pi_rpc import PiRpcClient
+from scholar_harness.traces.parity import RuntimeParityService
 from scholar_harness.traces.repository import SQLiteTraceRepository
 from scholar_harness.traces.runtime import TracingRuntime
 
@@ -119,6 +120,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     eval_gate.add_argument("--json-output", type=Path)
     eval_gate.add_argument("--junit-output", type=Path)
+
+    parity = commands.add_parser(
+        "parity", help="Compare two persisted runtime traces"
+    )
+    parity.add_argument("--left-run", required=True, dest="left_run_id")
+    parity.add_argument("--right-run", required=True, dest="right_run_id")
+    parity.add_argument(
+        "--database", type=Path, default=Path("data/scholar_harness.db")
+    )
+    parity.add_argument(
+        "--strict-output",
+        action="store_true",
+        help="Also require exact assembled assistant text",
+    )
 
     smoke = commands.add_parser("pi-smoke", help="Run a real Pi RPC and extension smoke test")
     smoke.add_argument(
@@ -400,6 +415,21 @@ def main() -> None:
             parser.error(str(exc))
         print(json_report, end="")
         if not suite_run.passed:
+            raise SystemExit(1)
+        return
+
+    if args.command == "parity":
+        service = RuntimeParityService(SQLiteTraceRepository(args.database))
+        try:
+            report = service.compare(
+                args.left_run_id,
+                args.right_run_id,
+                strict_output=args.strict_output,
+            )
+        except KeyError as exc:
+            parser.error(str(exc))
+        print(report.model_dump_json(indent=2))
+        if not report.passed:
             raise SystemExit(1)
         return
 

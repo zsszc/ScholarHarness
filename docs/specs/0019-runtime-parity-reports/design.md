@@ -8,7 +8,9 @@ snapshot. Only normalized live lifecycle types are retained; entry-replay rows a
 excluded. Tool call ids and timing are intentionally discarded.
 
 Message text is assembled from normalized `delta`, with Pi's legacy `text` field as
-a compatibility fallback. The snapshot may carry the assembled text internally and
+a compatibility fallback. Consecutive message-update lifecycle nodes are collapsed
+so provider streaming chunk size cannot create a false mismatch. The snapshot may
+carry the assembled text internally and
 in the top-level left/right snapshots, but ordinary check observations report only
 whether output exists. Strict mode adds an exact-output check with text observations
 because the caller explicitly requested it.

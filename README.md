@@ -179,6 +179,21 @@ GET /runs/{run_id}/events
 GET /runs/{run_id}/tools
 ```
 
+Compare a Pi trace with a MiniPy trace through the shared behavioral contract:
+
+```bash
+uv run scholar-harness parity \
+  --left-run PI_RUN_ID \
+  --right-run MINIPY_RUN_ID \
+  --database data/scholar_harness.db
+```
+
+The versioned JSON report compares terminal status, normalized lifecycle ordering,
+tool names/error outcomes, memory-context statuses, and whether an assistant answer
+was produced. Volatile ids, timestamps, latency, provider payloads, and exact prose
+are ignored. Add `--strict-output` only for deterministic fixtures where assistant
+text must match exactly; mismatches return exit code 1 for CI use.
+
 ## Deterministic evaluations
 
 Evaluation cases turn completed traces into explainable regression signals without
