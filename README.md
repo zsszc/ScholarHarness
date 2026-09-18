@@ -4,7 +4,13 @@ ScholarHarness is a runtime-agnostic research agent harness. It keeps literature
 memory, tools, traces, and evaluation in Python while allowing the agent runtime to
 be swapped between Pi and a small educational Python runtime.
 
-The repository currently contains the first vertical slice:
+**Portfolio status: complete local-first reference implementation.** For a fast
+review, start with the [three-minute portfolio guide](docs/portfolio.md),
+[architecture](docs/architecture.md), and reproducible
+[offline benchmark](docs/benchmark.md). Every non-trivial milestone has requirement
+ids and verification evidence under [`docs/specs`](docs/specs).
+
+The repository contains:
 
 - a typed runtime contract and normalized event model;
 - an asynchronous JSONL RPC client for `pi --mode rpc`;
@@ -23,6 +29,15 @@ The repository currently contains the first vertical slice:
 - deterministic trace evaluations with evidence checks and regression deltas;
 - a FastAPI service exposing the tool bridge;
 - a thin Pi TypeScript extension that forwards tool calls to Python.
+
+Fast evaluator path—no model credentials required:
+
+```bash
+uv sync --extra dev
+uv run scholar-harness pi-smoke
+uv run scholar-harness benchmark --papers 100 --queries 100 --trace-events 1000
+uv run pytest
+```
 
 ## Architecture
 

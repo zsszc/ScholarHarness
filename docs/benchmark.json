@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "database_mode": "temporary",
+  "workload": {
+    "papers": 100,
+    "passages_per_paper": 4,
+    "queries": 100,
+    "trace_events": 1000
+  },
+  "environment": {
+    "python": "3.12.2",
+    "sqlite": "3.45.2",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit",
+    "git_commit": "3f2b576"
+  },
+  "ingestion": {
+    "operations": 100,
+    "elapsed_seconds": 0.15486,
+    "operations_per_second": 645.74
+  },
+  "hybrid_retrieval": {
+    "operations": 100,
+    "elapsed_seconds": 0.805197,
+    "operations_per_second": 124.19
+  },
+  "trace_persistence": {
+    "operations": 1000,
+    "elapsed_seconds": 0.182992,
+    "operations_per_second": 5464.72
+  },
+  "checks": {
+    "retrieval_coordinates_valid": true,
+    "retrieval_result_count_valid": true,
+    "trace_event_count_valid": true,
+    "run_completed": true
+  }
+}

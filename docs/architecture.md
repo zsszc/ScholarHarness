@@ -217,3 +217,5 @@ the policy never mutates memory status.
     Pi/MiniPy contract checks, privacy-aware output comparison, and CI exit semantics.
 20. **Production boundary hardening**: authenticated Pi provenance, shared SQLite
     WAL/busy-timeout policy, deterministic contention handling, and operations docs.
+21. **Portfolio delivery**: reproducible offline benchmark, evaluator demo path,
+    evidence map, honest limitations, and interview/resume narrative.

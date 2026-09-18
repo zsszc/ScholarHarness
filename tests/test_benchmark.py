@@ -7,7 +7,7 @@ from tempfile import TemporaryDirectory
 import pytest
 
 import scholar_harness.benchmark as benchmark_module
-from scholar_harness.benchmark import run_benchmark
+from scholar_harness.benchmark import BenchmarkReport, run_benchmark
 from scholar_harness.cli import main
 
 
@@ -84,3 +84,25 @@ def test_benchmark_cli_rejects_non_positive_workloads(monkeypatch, capsys) -> No
         main()
 
     assert "value must be at least 1" in capsys.readouterr().err
+
+
+def test_checked_in_portfolio_evidence_is_consistent() -> None:
+    report = BenchmarkReport.model_validate_json(
+        open("docs/benchmark.json", encoding="utf-8").read()
+    )
+    benchmark = open("docs/benchmark.md", encoding="utf-8").read()
+    portfolio = open("docs/portfolio.md", encoding="utf-8").read()
+
+    assert report.environment.git_commit == "3f2b576"
+    assert all(report.checks.model_dump().values())
+    assert f"{report.ingestion.operations_per_second:,.2f}" in benchmark
+    assert f"{report.hybrid_retrieval.operations_per_second:,.2f}" in benchmark
+    assert f"{report.trace_persistence.operations_per_second:,.2f}" in benchmark
+    for evidence in (
+        "三分钟验证路径",
+        "面试讲解主线",
+        "证据地图",
+        "简历表述",
+        "已知限制与下一步",
+    ):
+        assert evidence in portfolio
