@@ -1,5 +1,7 @@
 # ScholarHarness
 
+[![CI](https://github.com/zsszc/ScholarHarness/actions/workflows/ci.yml/badge.svg)](https://github.com/zsszc/ScholarHarness/actions/workflows/ci.yml)
+
 ScholarHarness is a runtime-agnostic research agent harness. It keeps literature,
 memory, tools, traces, and evaluation in Python while allowing the agent runtime to
 be swapped between Pi and a small educational Python runtime.
@@ -9,6 +11,8 @@ review, start with the [three-minute portfolio guide](docs/portfolio.md),
 [architecture](docs/architecture.md), and reproducible
 [offline benchmark](docs/benchmark.md). Every non-trivial milestone has requirement
 ids and verification evidence under [`docs/specs`](docs/specs).
+Release history and owner-side publication checks live in
+[`CHANGELOG.md`](CHANGELOG.md) and [`docs/release.md`](docs/release.md).
 
 The repository contains:
 

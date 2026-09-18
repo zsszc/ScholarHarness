@@ -132,5 +132,7 @@ English version:
 - [Architecture](architecture.md)
 - [Benchmark](benchmark.md)
 - [CI workflow](ci.md)
+- [Changelog](../CHANGELOG.md)
+- [Release checklist](release.md)
 - [SDD workflow](sdd/README.md)
 - [Latest delivery specification](specs/0021-portfolio-delivery/spec.md)

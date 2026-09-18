@@ -1,5 +1,11 @@
 # CI regression gates
 
+The mandatory credential-free pull-request workflow is checked in at
+`.github/workflows/ci.yml`. It runs lock validation, lint, all tests, compilation,
+Pi smoke, benchmark smoke, and package build. The workflow below is an additional
+credentialed model-quality gate for repositories that configure a persisted suite
+and provider secrets.
+
 `eval-gate` executes a persisted Evaluation Suite and maps its outcome to standard
 CI semantics:
 
@@ -45,7 +51,7 @@ jobs:
   evaluation-gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install uv
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
@@ -76,7 +82,7 @@ jobs:
 
       - name: Upload evaluation evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: scholar-harness-evaluation
           path: artifacts/

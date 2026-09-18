@@ -219,3 +219,5 @@ the policy never mutates memory status.
     WAL/busy-timeout policy, deterministic contention handling, and operations docs.
 21. **Portfolio delivery**: reproducible offline benchmark, evaluator demo path,
     evidence map, honest limitations, and interview/resume narrative.
+22. **Release readiness**: pinned credential-free CI, package build verification,
+    changelog, release checklist, and repository contract tests.
