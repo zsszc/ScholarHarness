@@ -90,6 +90,15 @@ The workbench has no external asset or build dependency and is intended for
 localhost; public deployment and multi-user authentication are not part of the
 current scope.
 
+Chinese users can follow the [Chinese usage guide](docs/usage.zh-CN.md). The
+Workbench also includes an in-product **使用指南** page. For an
+OpenAI-compatible provider such as DeepSeek, copy `.env.example` to the ignored
+`.env`, fill in the local key, and start without exposing credentials to Git:
+
+```bash
+uv run --env-file .env scholar-harness api
+```
+
 For a hardened local Pi bridge, set the same high-entropy secret in both the API and
 Pi process environments:
 

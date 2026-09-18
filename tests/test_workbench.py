@@ -25,14 +25,39 @@ def test_in_memory_catalog_is_deterministic_and_limited() -> None:
 
 
 def test_workbench_contains_all_areas_and_no_external_assets() -> None:
-    for page in ("overview", "chat", "runs", "evaluations", "memories", "library"):
+    for page in (
+        "overview",
+        "guide",
+        "chat",
+        "runs",
+        "evaluations",
+        "memories",
+        "library",
+    ):
         assert f'data-page="{page}"' in WORKBENCH_HTML
-    assert "Workbench navigation" in WORKBENCH_HTML
+    assert "工作台导航" in WORKBENCH_HTML
     assert "Content-Security-Policy" in WORKBENCH_HTML
     assert '<script src=' not in WORKBENCH_HTML
     assert '<link rel="stylesheet"' not in WORKBENCH_HTML
     assert "http://" not in WORKBENCH_HTML
     assert "https://" not in WORKBENCH_HTML
+
+
+def test_workbench_is_chinese_guided_and_keeps_technical_terms() -> None:
+    for label in (
+        "使用指南",
+        "Agent 对话",
+        "评测实验室",
+        "本地服务已连接",
+        "candidate（候选）",
+        "confirmed（可信）",
+        "Case / Suite",
+        "Tool Calling",
+    ):
+        assert label in WORKBENCH_HTML
+    assert 'guide:"使用指南"' in WORKBENCH_HTML
+    assert 'connected:"已连接"' in WORKBENCH_HTML
+    assert 'running:"运行中"' in WORKBENCH_HTML
 
 
 def test_workbench_uses_safe_dom_and_explicit_panel_states() -> None:
@@ -60,13 +85,13 @@ def test_workbench_chat_uses_server_session_gateway() -> None:
     assert "base_url" not in WORKBENCH_HTML
     assert 'make("div",`chat-message ${role}`,text)' in WORKBENCH_HTML
     assert 'event.type==="context_injection"' in WORKBENCH_HTML
-    assert "memory context · ${event.data.status}" in WORKBENCH_HTML
+    assert "Memory 上下文 · ${event.data.status}" in WORKBENCH_HTML
     assert "event.code===4403" in WORKBENCH_HTML
     assert "持久会话仍已保留" in WORKBENCH_HTML
 
 
 def test_workbench_evaluation_lab_uses_public_contracts_and_safe_evidence() -> None:
-    assert "Evaluation Lab" in WORKBENCH_HTML
+    assert "评测实验室" in WORKBENCH_HTML
     assert 'request("/evaluations/cases?limit=500")' in WORKBENCH_HTML
     assert 'request("/evaluations/results?limit=500")' in WORKBENCH_HTML
     assert "/evaluations/cases/${encodeURIComponent(state.selectedCase.id)}/runs/" in WORKBENCH_HTML

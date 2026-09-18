@@ -1,6 +1,6 @@
 # Chinese guided workbench
 
-Status: Approved
+Status: Verified
 Date: 2026-09-19
 
 ## Problem
@@ -36,4 +36,3 @@ inspecting traces, and running evaluations.
   (ZHUI-004)
 - **AC-ZHUI-004**: A credential-free example documents DeepSeek-compatible local
   configuration and `.env` remains ignored. (ZHUI-005)
-
