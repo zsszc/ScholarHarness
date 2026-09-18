@@ -1,7 +1,9 @@
 from fastapi.testclient import TestClient
 
+import scholar_harness.api as api_module
 from scholar_harness.api import create_app
 from scholar_harness.core.events import AgentEvent
+from scholar_harness.memory.context import MemoryContextPolicy
 from scholar_harness.memory.repository import SQLiteMemoryRepository
 from scholar_harness.papers.models import Paper, Passage
 from scholar_harness.papers.pdf import PdfImportResult
@@ -21,6 +23,30 @@ class FakePdfIngestor:
             page_count=1,
             skipped_pages=0,
         )
+
+
+class StubChatManager:
+    async def close_all(self) -> None:
+        return None
+
+
+def test_default_api_chat_uses_memory_context_policy(tmp_path, monkeypatch) -> None:
+    memories = SQLiteMemoryRepository(tmp_path / "context.db")
+    captured = {}
+
+    def capture_manager(**kwargs):
+        captured.update(kwargs)
+        return StubChatManager()
+
+    monkeypatch.setattr(api_module, "create_default_chat_manager", capture_manager)
+
+    create_app(
+        repository=InMemoryPaperRepository(),
+        memory_repository=memories,
+        trace_repository=SQLiteTraceRepository(tmp_path / "context.db"),
+    )
+
+    assert isinstance(captured["context_provider"], MemoryContextPolicy)
 
 
 def test_health_and_tool_flow(tmp_path) -> None:

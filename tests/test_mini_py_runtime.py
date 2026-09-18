@@ -6,6 +6,7 @@ from collections.abc import Sequence
 import pytest
 from pydantic import BaseModel
 
+from scholar_harness.runtimes.context import PreparedContext
 from scholar_harness.runtimes.mini_py import MiniPyRuntime
 from scholar_harness.runtimes.model import (
     ModelMessage,
@@ -46,6 +47,44 @@ class BlockingModel:
         messages: Sequence[ModelMessage],
         tools: Sequence[ModelToolDefinition],
     ) -> ModelResponse:
+        self.entered.set()
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            self.cancelled = True
+            raise
+        raise AssertionError("unreachable")
+
+
+class StaticContextProvider:
+    def __init__(self, prepared: PreparedContext) -> None:
+        self.prepared = prepared
+        self.calls: list[tuple[str, str]] = []
+
+    async def prepare(self, prompt: str, session_id: str) -> PreparedContext:
+        self.calls.append((prompt, session_id))
+        return self.prepared
+
+
+class PromptContextProvider:
+    async def prepare(self, prompt: str, session_id: str) -> PreparedContext:
+        return PreparedContext(
+            content=f"context for {prompt}",
+            metadata={"status": "selected", "selected_ids": [prompt]},
+        )
+
+
+class FailingContextProvider:
+    async def prepare(self, prompt: str, session_id: str) -> PreparedContext:
+        raise RuntimeError("private retrieval detail")
+
+
+class BlockingContextProvider:
+    def __init__(self) -> None:
+        self.entered = asyncio.Event()
+        self.cancelled = False
+
+    async def prepare(self, prompt: str, session_id: str) -> PreparedContext:
         self.entered.set()
         try:
             await asyncio.Event().wait()
@@ -128,6 +167,85 @@ async def test_executes_tool_loop_and_appends_replayable_entries() -> None:
     assert model.calls[1][-1].content == '{"echo": "hi"}'
     assert model.tool_definitions[0][0].name == "echo"
     assert model.tool_definitions[0][0].parameters["required"] == ["text"]
+
+
+async def test_injects_prepared_context_before_user_message_and_traces_decision() -> None:
+    model = ScriptedModel([ModelResponse(content="answer")])
+    provider = StaticContextProvider(
+        PreparedContext(
+            content="trusted reference data",
+            metadata={
+                "status": "selected",
+                "selected_count": 1,
+                "selected_ids": ["memory-1"],
+            },
+        )
+    )
+    runtime = MiniPyRuntime(
+        model,
+        echo_tools(),
+        session_id="context-session",
+        context_provider=provider,
+    )
+    await runtime.start()
+
+    events = await collect(runtime, "question")
+    entries = await runtime.get_entries()
+
+    assert provider.calls == [("question", "context-session")]
+    assert [event.type for event in events] == [
+        "agent_start",
+        "context_injection",
+        "message_update",
+        "agent_end",
+        "agent_settled",
+    ]
+    assert events[1].data["selected_ids"] == ["memory-1"]
+    assert [entry.type for entry in entries] == ["context", "message", "message"]
+    assert [message.role for message in model.calls[0]] == ["system", "user"]
+    assert model.calls[0][0].content == "trusted reference data"
+    assert model.calls[0][1].content == "question"
+
+
+async def test_context_failure_is_safe_and_does_not_block_model() -> None:
+    model = ScriptedModel([ModelResponse(content="answer without memory")])
+    runtime = MiniPyRuntime(
+        model,
+        echo_tools(),
+        context_provider=FailingContextProvider(),
+    )
+    await runtime.start()
+
+    events = await collect(runtime, "question")
+
+    assert events[1].data["type"] == "context_injection"
+    assert events[1].data["status"] == "error"
+    assert events[1].data["error"] == "retrieval_error"
+    assert events[1].data["selected_count"] == 0
+    assert events[1].data["selected_ids"] == []
+    assert events[1].data["item_limit"] is None
+    assert events[1].data["char_limit"] is None
+    assert events[1].data["content"] == ""
+    assert "private retrieval detail" not in str(events)
+    assert [message.role for message in model.calls[0]] == ["user"]
+
+
+async def test_cancelling_turn_cancels_context_retrieval() -> None:
+    provider = BlockingContextProvider()
+    runtime = MiniPyRuntime(
+        ScriptedModel([ModelResponse(content="unused")]),
+        echo_tools(),
+        context_provider=provider,
+    )
+    await runtime.start()
+    turn = asyncio.create_task(collect(runtime, "question"))
+    await provider.entered.wait()
+
+    turn.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await turn
+
+    assert provider.cancelled is True
 
 
 async def test_tool_failures_become_model_observations() -> None:
@@ -307,6 +425,51 @@ async def test_compaction_replaces_active_model_context_but_preserves_entries() 
     assert [message.role for message in model.calls[1]] == ["system", "user"]
     assert "Compaction instructions" in model.calls[1][0].content
     assert model.calls[1][1].content == "new question"
+
+
+async def test_context_entries_follow_forks_and_compaction_without_rewrite() -> None:
+    model = ScriptedModel(
+        [
+            ModelResponse(content="root answer"),
+            ModelResponse(content="branch A answer"),
+            ModelResponse(content="branch B answer"),
+            ModelResponse(content="post compact answer"),
+        ]
+    )
+    runtime = MiniPyRuntime(
+        model,
+        echo_tools(),
+        context_provider=PromptContextProvider(),
+    )
+    await runtime.start()
+    await collect(runtime, "root")
+    root_entries = await runtime.get_entries()
+    root_leaf = root_entries[-1].entry_id
+    assert root_leaf is not None
+
+    await collect(runtime, "branch A")
+    await runtime.fork(root_leaf)
+    await collect(runtime, "branch B")
+
+    assert [message.content for message in model.calls[2]] == [
+        "context for root",
+        "root",
+        "root answer",
+        "context for branch B",
+        "branch B",
+    ]
+    all_entries = await runtime.get_entries()
+    assert any(
+        entry.type == "context" and entry.data["content"] == "context for branch A"
+        for entry in all_entries
+    )
+
+    await runtime.compact("retain active branch")
+    await collect(runtime, "after compact")
+
+    assert [message.role for message in model.calls[3]] == ["system", "system", "user"]
+    assert "Compaction instructions" in model.calls[3][0].content
+    assert model.calls[3][1].content == "context for after compact"
 
 
 async def test_lifecycle_and_unknown_entries_are_rejected() -> None:

@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pydantic import BaseModel
 
 from scholar_harness.core.events import AgentEvent
+from scholar_harness.runtimes.context import TurnContextProvider
 from scholar_harness.runtimes.mini_py import MiniPyRuntime
 from scholar_harness.runtimes.model import ModelAdapter
 from scholar_harness.runtimes.openai_compatible import OpenAICompatibleAdapter
@@ -42,11 +43,17 @@ class ChatSession:
         adapter: ModelAdapter,
         tools: ToolRegistry,
         traces: SQLiteTraceRepository,
+        context_provider: TurnContextProvider | None = None,
     ) -> None:
         self.id = session_id
         self.created_at = datetime.now(UTC)
         self._adapter = adapter
-        self._mini = MiniPyRuntime(adapter, tools, session_id=session_id)
+        self._mini = MiniPyRuntime(
+            adapter,
+            tools,
+            session_id=session_id,
+            context_provider=context_provider,
+        )
         self._runtime = TracingRuntime(
             self._mini,
             traces,
@@ -144,11 +151,13 @@ class ChatSessionManager:
         traces: SQLiteTraceRepository,
         adapter_factory: AdapterFactory | None,
         unavailable_reason: str | None = None,
+        context_provider: TurnContextProvider | None = None,
     ) -> None:
         self._tools = tools
         self._traces = traces
         self._adapter_factory = adapter_factory
         self._unavailable_reason = unavailable_reason
+        self._context_provider = context_provider
         self._sessions: dict[str, ChatSession] = {}
         self._lock = asyncio.Lock()
 
@@ -164,6 +173,7 @@ class ChatSessionManager:
             adapter=adapter,
             tools=self._tools,
             traces=self._traces,
+            context_provider=self._context_provider,
         )
         try:
             await session.start()
@@ -207,6 +217,7 @@ def create_default_chat_manager(
     tools: ToolRegistry,
     traces: SQLiteTraceRepository,
     environ: Mapping[str, str] | None = None,
+    context_provider: TurnContextProvider | None = None,
 ) -> ChatSessionManager:
     values = os.environ if environ is None else environ
     model = values.get("OPENAI_MODEL", "").strip()
@@ -216,6 +227,7 @@ def create_default_chat_manager(
             traces=traces,
             adapter_factory=None,
             unavailable_reason="Set OPENAI_MODEL on the server to enable browser chat",
+            context_provider=context_provider,
         )
     base_url = values.get("OPENAI_BASE_URL", "https://api.openai.com/v1").strip()
     if not base_url:
@@ -224,6 +236,7 @@ def create_default_chat_manager(
             traces=traces,
             adapter_factory=None,
             unavailable_reason="OPENAI_BASE_URL cannot be empty",
+            context_provider=context_provider,
         )
     timeout_text = values.get("OPENAI_TIMEOUT_SECONDS", "60")
     try:
@@ -236,6 +249,7 @@ def create_default_chat_manager(
             traces=traces,
             adapter_factory=None,
             unavailable_reason="OPENAI_TIMEOUT_SECONDS must be a positive number",
+            context_provider=context_provider,
         )
     api_key = values.get("OPENAI_API_KEY") or None
 
@@ -251,4 +265,5 @@ def create_default_chat_manager(
         tools=tools,
         traces=traces,
         adapter_factory=adapter_factory,
+        context_provider=context_provider,
     )

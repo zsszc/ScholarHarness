@@ -57,6 +57,8 @@ def test_workbench_chat_uses_server_session_gateway() -> None:
     assert "api_key" not in WORKBENCH_HTML
     assert "base_url" not in WORKBENCH_HTML
     assert 'make("div",`chat-message ${role}`,text)' in WORKBENCH_HTML
+    assert 'event.type==="context_injection"' in WORKBENCH_HTML
+    assert "memory context · ${event.data.status}" in WORKBENCH_HTML
 
 
 def test_workbench_evaluation_lab_uses_public_contracts_and_safe_evidence() -> None:

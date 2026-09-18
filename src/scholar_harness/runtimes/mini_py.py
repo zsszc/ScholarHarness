@@ -8,6 +8,7 @@ from typing import Any, TypeVar
 
 from scholar_harness.core.events import AgentEvent
 from scholar_harness.runtimes.base import AgentRuntime
+from scholar_harness.runtimes.context import PreparedContext, TurnContextProvider
 from scholar_harness.runtimes.model import (
     ModelAdapter,
     ModelMessage,
@@ -35,6 +36,7 @@ class MiniPyRuntime(AgentRuntime):
         max_tool_rounds: int = 8,
         compaction_char_limit: int = 4_000,
         session_id: str | None = None,
+        context_provider: TurnContextProvider | None = None,
     ) -> None:
         if max_tool_rounds < 1:
             raise ValueError("max_tool_rounds must be at least 1")
@@ -45,6 +47,7 @@ class MiniPyRuntime(AgentRuntime):
         self._max_tool_rounds = max_tool_rounds
         self._compaction_char_limit = compaction_char_limit
         self._session_id = session_id or str(uuid.uuid4())
+        self._context_provider = context_provider
         self._entries: list[AgentEvent] = []
         self._entry_positions: dict[str, int] = {}
         self._active_leaf_id: str | None = None
@@ -78,10 +81,48 @@ class MiniPyRuntime(AgentRuntime):
         status = "completed"
         error: str | None = None
         yield self._live_event("agent_start", {"type": "agent_start"})
-        self._append_entry("message", {"role": "user", "content": prompt})
 
         try:
             try:
+                if self._context_provider is not None:
+                    try:
+                        prepared = PreparedContext.model_validate(
+                            await self._interruptible(
+                                self._context_provider.prepare(prompt, self._session_id)
+                            )
+                        )
+                    except _TurnAborted:
+                        raise
+                    except Exception:
+                        yield self._live_event(
+                            "context_injection",
+                            self._context_event_data(
+                                {},
+                                content="",
+                                status="error",
+                                error="retrieval_error",
+                            ),
+                        )
+                    else:
+                        context_entry = None
+                        if prepared.content:
+                            context_entry = self._append_entry(
+                                "context",
+                                {
+                                    "role": "system",
+                                    "content": prepared.content,
+                                    "context": prepared.metadata,
+                                },
+                            )
+                        yield self._live_event(
+                            "context_injection",
+                            self._context_event_data(
+                                prepared.metadata,
+                                content=prepared.content,
+                            ),
+                            entry=context_entry,
+                        )
+                self._append_entry("message", {"role": "user", "content": prompt})
                 tool_rounds = 0
                 while True:
                     response = await self._interruptible(
@@ -262,7 +303,7 @@ class MiniPyRuntime(AgentRuntime):
 
         messages: list[ModelMessage] = []
         for entry in path:
-            if entry.type == "compaction":
+            if entry.type in {"compaction", "context"}:
                 messages.append(
                     ModelMessage(role="system", content=str(entry.data["content"]))
                 )
@@ -292,6 +333,32 @@ class MiniPyRuntime(AgentRuntime):
             ModelToolDefinition.model_validate(definition)
             for definition in self._tools.definitions()
         ]
+
+    @staticmethod
+    def _context_event_data(
+        metadata: dict[str, Any],
+        *,
+        content: str,
+        **overrides: Any,
+    ) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "type": "context_injection",
+            "status": "selected" if content else "empty",
+            "retrieved_count": 0,
+            "eligible_count": 0,
+            "selected_count": 0,
+            "omitted_count": 0,
+            "truncated_count": 0,
+            "excluded_scope_count": 0,
+            "selected_ids": [],
+            "item_limit": None,
+            "char_limit": None,
+            "content": content,
+        }
+        data.update(metadata)
+        data.update(overrides)
+        data["type"] = "context_injection"
+        return data
 
     async def _interruptible(self, awaitable: Awaitable[_T]) -> _T:
         assert self._abort_event is not None

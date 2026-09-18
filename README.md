@@ -15,6 +15,7 @@ The repository currently contains the first vertical slice:
 - strict quote-to-passage validation through the `validate_citation` tool;
 - page-aware PDF ingestion with stable passage coordinates;
 - evidence-verified candidate memories with explicit confirmation and recall;
+- automatic pre-turn recall of trusted, scope-filtered memory with observable budgets;
 - durable, redacted runtime traces and correlated tool executions;
 - an inspectable Python model/tool loop with abort, branching, compaction, and replay;
 - a local observability workbench for runs, tools, memory review, and library search;
@@ -139,6 +140,15 @@ curl -X POST http://127.0.0.1:8765/memories/MEMORY_ID/confirm
 
 `recall_memory` searches only `confirmed` records. Rejected and superseded records
 remain auditable in SQLite but cannot silently influence the agent.
+
+MiniPy chats and evaluation runs also search confirmed memory automatically before
+each turn. Global memories are eligible everywhere; session memories are eligible
+only in their originating session; branch memories remain excluded until the
+harness has a durable branch-identity policy. The bounded result is added as an
+inspectable system entry labelled as reference data, and every decision (including
+an empty match or safe retrieval failure) is emitted as `context_injection` in the
+live activity stream and trace. Manual `recall_memory` remains available when the
+agent needs an explicit follow-up search.
 
 ## Runtime traces
 

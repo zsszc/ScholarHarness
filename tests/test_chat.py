@@ -4,14 +4,20 @@ from collections.abc import AsyncIterator, Sequence
 
 import pytest
 
+import scholar_harness.cli as cli_module
 from scholar_harness.chat import run_chat
 from scholar_harness.cli import (
     ChatConfig,
     build_parser,
     resolve_chat_config,
     run_configured_chat,
+    run_configured_evaluation,
+    run_configured_evaluation_suite,
 )
 from scholar_harness.core.events import AgentEvent
+from scholar_harness.memory.context import MemoryContextPolicy
+from scholar_harness.memory.models import MemoryEvidence
+from scholar_harness.memory.repository import SQLiteMemoryRepository
 from scholar_harness.runtimes.base import AgentRuntime
 from scholar_harness.runtimes.model import (
     ModelMessage,
@@ -30,6 +36,7 @@ class ClosingModel:
         self.response = response or ModelResponse(content="hello from model")
         self.error = error
         self.tools: list[ModelToolDefinition] = []
+        self.messages: list[ModelMessage] = []
         self.closed = False
 
     async def complete(
@@ -37,6 +44,7 @@ class ClosingModel:
         messages: Sequence[ModelMessage],
         tools: Sequence[ModelToolDefinition],
     ) -> ModelResponse:
+        self.messages = list(messages)
         self.tools = list(tools)
         if self.error is not None:
             raise self.error
@@ -161,6 +169,49 @@ async def test_one_shot_composition_exposes_tools_traces_and_closes(tmp_path) ->
     assert run.runtime_type == "mini-py-openai-compatible"
 
 
+async def test_cli_chat_automatically_injects_confirmed_memory(tmp_path) -> None:
+    database = tmp_path / "memory-chat.db"
+    memories = SQLiteMemoryRepository(database)
+    memory = memories.create_candidate(
+        content="beacon supports automatic memory context",
+        kind="semantic",
+        scope="global",
+        confidence=0.9,
+        evidence=[
+            MemoryEvidence(
+                paper_id="paper-1",
+                passage_id="passage-2",
+                quote="memory evidence",
+                page=3,
+            )
+        ],
+    )
+    memories.set_status(memory.id, "confirmed")
+    model = ClosingModel()
+    config = ChatConfig(
+        model="fake",
+        base_url="http://unused/v1",
+        api_key=None,
+        database=database,
+        timeout_seconds=1,
+        prompt="explain beacon",
+        trace=True,
+    )
+
+    run_id = await run_configured_chat(config, adapter=model, output_fn=lambda _: None)
+
+    assert [message.role for message in model.messages] == ["system", "user"]
+    assert memory.id in model.messages[0].content
+    assert "paper-1/passage-2/page-3" in model.messages[0].content
+    assert run_id is not None
+    context_event = next(
+        event
+        for event in SQLiteTraceRepository(database).list_events(run_id)
+        if event.event_type == "context_injection"
+    )
+    assert context_event.payload["selected_ids"] == [memory.id]
+
+
 async def test_model_failure_still_closes_adapter_and_records_failed_trace(tmp_path) -> None:
     database = tmp_path / "failed-chat.db"
     model = ClosingModel(error=RuntimeError("provider failed"))
@@ -180,6 +231,33 @@ async def test_model_failure_still_closes_adapter_and_records_failed_trace(tmp_p
     assert model.closed is True
     runs = SQLiteTraceRepository(database).list_runs()
     assert runs[0].status == "failed"
+
+
+async def test_evaluation_entry_points_compose_default_memory_policy(
+    tmp_path, monkeypatch
+) -> None:
+    captured = []
+
+    class StubManager:
+        async def close_all(self) -> None:
+            return None
+
+    def capture_manager(**kwargs):
+        captured.append(kwargs)
+        return StubManager()
+
+    monkeypatch.setattr(cli_module, "create_default_chat_manager", capture_manager)
+    database = tmp_path / "evaluation-context.db"
+
+    with pytest.raises(KeyError, match="Unknown evaluation case"):
+        await run_configured_evaluation("missing", database)
+    with pytest.raises(KeyError, match="Unknown evaluation suite"):
+        await run_configured_evaluation_suite("missing", database)
+
+    assert len(captured) == 2
+    assert all(
+        isinstance(call["context_provider"], MemoryContextPolicy) for call in captured
+    )
 
 
 async def test_interactive_controls_and_tool_activity() -> None:

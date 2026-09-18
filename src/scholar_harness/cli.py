@@ -26,6 +26,8 @@ from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
 from scholar_harness.evaluations.runner import EvaluationExecutionError, EvaluationRunner
 from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
 from scholar_harness.evaluations.suites import EvaluationSuiteRunner
+from scholar_harness.memory.context import MemoryContextPolicy
+from scholar_harness.memory.repository import SQLiteMemoryRepository
 from scholar_harness.runtimes.base import AgentRuntime
 from scholar_harness.runtimes.mini_py import MiniPyRuntime
 from scholar_harness.runtimes.model import ModelAdapter
@@ -226,7 +228,13 @@ async def run_configured_chat(
     runtime: AgentRuntime | None = None
     trace_runtime: TracingRuntime | None = None
     try:
-        mini_runtime = MiniPyRuntime(active_adapter, build_chat_tools(config.database))
+        mini_runtime = MiniPyRuntime(
+            active_adapter,
+            build_chat_tools(config.database),
+            context_provider=MemoryContextPolicy(
+                SQLiteMemoryRepository(config.database)
+            ),
+        )
         runtime = mini_runtime
         if config.trace:
             trace_runtime = TracingRuntime(
@@ -265,6 +273,7 @@ async def run_configured_evaluation(
         tools=build_chat_tools(database),
         traces=traces,
         environ=environ,
+        context_provider=MemoryContextPolicy(SQLiteMemoryRepository(database)),
     )
     runner = EvaluationRunner(
         sessions,
@@ -287,7 +296,10 @@ async def run_configured_evaluation_suite(
     traces = SQLiteTraceRepository(database)
     evaluations = SQLiteEvaluationRepository(database)
     sessions = chat_manager or create_default_chat_manager(
-        tools=build_chat_tools(database), traces=traces, environ=environ
+        tools=build_chat_tools(database),
+        traces=traces,
+        environ=environ,
+        context_provider=MemoryContextPolicy(SQLiteMemoryRepository(database)),
     )
     runner = EvaluationRunner(
         sessions, evaluations, TraceEvaluator(traces, evaluations)

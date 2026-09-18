@@ -35,6 +35,7 @@ from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
 from scholar_harness.evaluations.runner import EvaluationExecutionError, EvaluationRunner
 from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
 from scholar_harness.evaluations.suites import EvaluationSuiteRunner
+from scholar_harness.memory.context import MemoryContextPolicy
 from scholar_harness.memory.models import Memory, MemoryStatus
 from scholar_harness.memory.repository import SQLiteMemoryRepository
 from scholar_harness.memory.tools import build_memory_tools
@@ -65,7 +66,11 @@ def create_app(
     ingestor = pdf_ingestor or PdfIngestor()
     tools = build_paper_tools(paper_repository)
     tools.extend(build_memory_tools(memories, paper_repository))
-    chats = chat_session_manager or create_default_chat_manager(tools=tools, traces=traces)
+    chats = chat_session_manager or create_default_chat_manager(
+        tools=tools,
+        traces=traces,
+        context_provider=MemoryContextPolicy(memories),
+    )
     evaluation_runner = EvaluationRunner(chats, evaluations, evaluator)
     suite_runner = EvaluationSuiteRunner(evaluations, evaluation_runner)
 

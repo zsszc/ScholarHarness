@@ -37,6 +37,13 @@ It owns an explicit bounded model/tool loop, append-only in-memory session entri
 path-scoped branching, cooperative abort, and visible compaction nodes. It reuses
 `ToolRegistry`; model adapters never execute tools directly.
 
+Its optional `TurnContextProvider` is a second provider-neutral boundary. Before a
+turn, MiniPy asks it for rendered context plus decision metadata, records non-empty
+context as an ordinary append-only system entry, and emits `context_injection`
+before model execution. MiniPy has no dependency on memory storage or trust rules;
+provider failure is a safe fail-open observation while cancellation still
+propagates.
+
 `OpenAICompatibleAdapter` is the first concrete model boundary. It translates the
 internal messages and tool definitions to Chat Completions function calls over
 HTTP, but remains outside session, tool execution, and trace ownership. The CLI
@@ -123,6 +130,13 @@ verbatim evidence against a stored passage and creates a `candidate`. Only an
 explicit API action can mark it `confirmed`; `recall_memory` excludes every other
 status. Rejected and superseded rows remain stored for audit and evaluation.
 
+`MemoryContextPolicy` applies the same boundary automatically to API chat, CLI chat,
+case execution, suite execution, and CI gates. It preserves deterministic FTS
+relevance order, admits global and matching-session confirmed rows, excludes branch
+scope, and renders a bounded data-not-instructions block with memory and evidence
+coordinates. Selection counts, omissions, truncation, and ids are trace evidence;
+the policy never mutates memory status.
+
 ## Delivery milestones
 
 1. **Runtime foundation**: Pi RPC, tools, session projection, tests.
@@ -146,3 +160,5 @@ status. Rejected and superseded rows remain stored for audit and evaluation.
     item-level diagnostics, and overview regression-gate metrics.
 13. **CI regression gate**: stable exit semantics, atomic JSON/JUnit artifacts, and
     documented GitHub Actions evidence publication.
+14. **Memory context policy**: trusted pre-turn recall, scope and budget controls,
+    append-only context entries, safe failure handling, and trace/Workbench evidence.

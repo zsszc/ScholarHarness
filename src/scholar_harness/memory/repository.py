@@ -179,7 +179,7 @@ class SQLiteMemoryRepository:
                 FROM memory_fts
                 JOIN memories m ON m.id = memory_fts.memory_id
                 WHERE memory_fts MATCH ? AND m.status = 'confirmed'
-                ORDER BY rank
+                ORDER BY rank, m.created_at, m.id
                 LIMIT ?
                 """,
                 (fts_query, limit),

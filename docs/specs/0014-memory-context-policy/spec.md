@@ -1,6 +1,6 @@
 # Memory context policy
 
-Status: Approved
+Status: Verified
 Date: 2026-09-18
 
 ## Problem
