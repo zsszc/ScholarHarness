@@ -46,6 +46,8 @@ def test_workbench_uses_safe_dom_and_explicit_panel_states() -> None:
     assert "/internal/tools/search_papers" in WORKBENCH_HTML
     assert "lexical_rank" in WORKBENCH_HTML
     assert "vector_rank" in WORKBENCH_HTML
+    assert "if(!target){const host=byId(panel);if(!host)return" in WORKBENCH_HTML
+    assert "target.dataset.state=panel;host.prepend(target)" in WORKBENCH_HTML
 
 
 def test_workbench_chat_uses_server_session_gateway() -> None:
