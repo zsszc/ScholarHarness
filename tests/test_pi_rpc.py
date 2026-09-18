@@ -4,6 +4,21 @@ from pathlib import Path
 from scholar_harness.runtimes.pi_rpc import PiRpcClient, PiRuntime
 
 
+def test_pi_extension_hides_and_forwards_memory_provenance() -> None:
+    source = Path("pi-extension/index.ts").read_text()
+
+    for field in (
+        "source_session_id",
+        "source_entry_id",
+        "trace_run_id",
+        "source_tool_call_id",
+    ):
+        assert field not in source
+    assert "executionHeaders(toolCallId, ctx)" in source
+    assert '"X-Scholar-Session-Id": ctx.sessionManager.getSessionId()' in source
+    assert '"X-Scholar-Tool-Call-Id": toolCallId' in source
+
+
 async def test_pi_runtime_streams_events_and_normalizes_entries() -> None:
     fake_pi = Path(__file__).parent / "fixtures" / "fake_pi.py"
     client = PiRpcClient((sys.executable, str(fake_pi)))

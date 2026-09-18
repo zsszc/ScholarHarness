@@ -1,18 +1,29 @@
 import { Type } from "@earendil-works/pi-ai";
-import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { defineTool, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 const baseUrl = process.env.SCHOLAR_HARNESS_URL ?? "http://127.0.0.1:8765";
 
-async function callPythonTool(name: string, input: unknown): Promise<unknown> {
+async function callPythonTool(name: string, input: unknown, provenance: Record<string, string> = {}): Promise<unknown> {
   const response = await fetch(`${baseUrl}/internal/tools/${name}`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...provenance },
     body: JSON.stringify(input),
   });
   if (!response.ok) {
     throw new Error(`ScholarHarness tool ${name} failed: ${response.status} ${await response.text()}`);
   }
   return response.json();
+}
+
+function executionHeaders(toolCallId: string, ctx: ExtensionContext): Record<string, string> {
+  const headers: Record<string, string> = {
+    "X-Scholar-Runtime-Type": "pi",
+    "X-Scholar-Session-Id": ctx.sessionManager.getSessionId(),
+    "X-Scholar-Tool-Call-Id": toolCallId,
+  };
+  const leafId = ctx.sessionManager.getLeafId();
+  if (leafId) headers["X-Scholar-Entry-Id"] = leafId;
+  return headers;
 }
 
 export default function scholarHarnessBridge(pi: ExtensionAPI) {
@@ -94,13 +105,9 @@ export default function scholarHarnessBridge(pi: ExtensionAPI) {
         passage_id: Type.String({ minLength: 1 }),
         quote: Type.String({ minLength: 1 }),
       }), { minItems: 1, maxItems: 20 }),
-      source_session_id: Type.Optional(Type.String()),
-      source_entry_id: Type.Optional(Type.String()),
-      trace_run_id: Type.Optional(Type.String()),
-      source_tool_call_id: Type.Optional(Type.String()),
     }),
-    async execute(_toolCallId, params) {
-      const result = await callPythonTool("save_memory", params);
+    async execute(toolCallId, params, _signal, _onUpdate, ctx) {
+      const result = await callPythonTool("save_memory", params, executionHeaders(toolCallId, ctx));
       return {
         content: [{ type: "text", text: JSON.stringify(result) }],
         details: result,

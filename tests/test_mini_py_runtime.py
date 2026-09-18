@@ -14,7 +14,10 @@ from scholar_harness.runtimes.model import (
     ModelToolCall,
     ModelToolDefinition,
 )
+from scholar_harness.tools.context import ToolExecutionContext, current_trace_binding
 from scholar_harness.tools.registry import Tool, ToolRegistry
+from scholar_harness.traces.repository import SQLiteTraceRepository
+from scholar_harness.traces.runtime import TracingRuntime
 
 
 class EchoInput(BaseModel):
@@ -167,6 +170,60 @@ async def test_executes_tool_loop_and_appends_replayable_entries() -> None:
     assert model.calls[1][-1].content == '{"echo": "hi"}'
     assert model.tool_definitions[0][0].name == "echo"
     assert model.tool_definitions[0][0].parameters["required"] == ["text"]
+
+
+async def test_traced_runtime_supplies_trusted_tool_execution_context(tmp_path) -> None:
+    observed: list[ToolExecutionContext | None] = []
+    registry = ToolRegistry()
+
+    async def inspect_context(
+        arguments: EchoInput, context: ToolExecutionContext | None
+    ):
+        observed.append(context)
+        return {"echo": arguments.text}
+
+    registry.register(
+        Tool(
+            name="inspect_context",
+            description="Inspect execution context.",
+            input_model=EchoInput,
+            handler=inspect_context,
+            context_aware=True,
+        )
+    )
+    model = ScriptedModel(
+        [
+            ModelResponse(
+                tool_calls=[
+                    ModelToolCall(
+                        id="trusted-call",
+                        name="inspect_context",
+                        arguments={"text": "hello"},
+                    )
+                ]
+            ),
+            ModelResponse(content="done"),
+        ]
+    )
+    mini = MiniPyRuntime(model, registry, session_id="trusted-session")
+    traced = TracingRuntime(
+        mini,
+        SQLiteTraceRepository(tmp_path / "context-trace.db"),
+        runtime_type="trusted-mini",
+    )
+    await traced.start()
+
+    _ = [event async for event in traced.stream("run")]
+
+    assert traced.last_run_id is not None
+    context = observed[0]
+    assert context is not None
+    assert context.runtime_type == "trusted-mini"
+    assert context.session_id == "trusted-session"
+    assert context.tool_call_id == "trusted-call"
+    assert context.trace_run_id == traced.last_run_id
+    assert context.entry_id is not None
+    assert current_trace_binding() is None
 
 
 async def test_injects_prepared_context_before_user_message_and_traces_decision() -> None:

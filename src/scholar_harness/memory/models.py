@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 MemoryKind = Literal["semantic", "episodic", "procedural"]
 MemoryScope = Literal["global", "session", "branch"]
@@ -34,15 +34,13 @@ class Memory(BaseModel):
 
 
 class SaveMemoryInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     content: str = Field(min_length=1, max_length=8_000)
     kind: MemoryKind = "semantic"
     scope: MemoryScope = "global"
     confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     evidence: list[MemoryEvidence] = Field(min_length=1, max_length=20)
-    source_session_id: str | None = None
-    source_entry_id: str | None = None
-    trace_run_id: str | None = None
-    source_tool_call_id: str | None = None
 
 
 class RecallMemoryInput(BaseModel):

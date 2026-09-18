@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from scholar_harness.memory.models import MemoryEvidence, RecallMemoryInput, SaveMemoryInput
 from scholar_harness.memory.repository import SQLiteMemoryRepository
 from scholar_harness.papers.repository import PaperRepository
+from scholar_harness.tools.context import ToolExecutionContext
 from scholar_harness.tools.registry import Tool, ToolRegistry
 
 _SPACE = re.compile(r"\s+")
@@ -17,7 +18,16 @@ def build_memory_tools(
 ) -> ToolRegistry:
     registry = ToolRegistry()
 
-    async def save(arguments: SaveMemoryInput) -> Mapping[str, object]:
+    async def save(
+        arguments: SaveMemoryInput,
+        context: ToolExecutionContext | None,
+    ) -> Mapping[str, object]:
+        if arguments.scope != "global" and (
+            context is None or context.session_id is None
+        ):
+            raise ValueError(
+                f"{arguments.scope} memory requires trusted runtime context"
+            )
         verified: list[MemoryEvidence] = []
         for evidence in arguments.evidence:
             passage = paper_repository.read(evidence.paper_id, evidence.passage_id)
@@ -38,10 +48,10 @@ def build_memory_tools(
             scope=arguments.scope,
             confidence=arguments.confidence,
             evidence=verified,
-            source_session_id=arguments.source_session_id,
-            source_entry_id=arguments.source_entry_id,
-            trace_run_id=arguments.trace_run_id,
-            source_tool_call_id=arguments.source_tool_call_id,
+            source_session_id=context.session_id if context else None,
+            source_entry_id=context.entry_id if context else None,
+            trace_run_id=context.trace_run_id if context else None,
+            source_tool_call_id=context.tool_call_id if context else None,
         )
         return {
             "memory": memory.model_dump(mode="json"),
@@ -60,6 +70,7 @@ def build_memory_tools(
             ),
             input_model=SaveMemoryInput,
             handler=save,
+            context_aware=True,
         )
     )
     registry.register(

@@ -142,6 +142,64 @@ def test_memory_confirmation_api(tmp_path) -> None:
     assert confirmed.json()["status"] == "confirmed"
 
 
+def test_http_tool_context_owns_memory_provenance(tmp_path) -> None:
+    repository = InMemoryPaperRepository()
+    repository.add(
+        Paper(
+            id="paper-context",
+            title="Trusted Context",
+            passages=[
+                Passage(
+                    id="passage-context",
+                    page=5,
+                    text="Trusted execution context prevents provenance spoofing.",
+                )
+            ],
+        )
+    )
+    memories = SQLiteMemoryRepository(tmp_path / "http-context.db")
+    client = TestClient(
+        create_app(repository=repository, memory_repository=memories)
+    )
+    arguments = {
+        "content": "Provenance must be runtime owned.",
+        "scope": "session",
+        "evidence": [
+            {
+                "paper_id": "paper-context",
+                "passage_id": "passage-context",
+                "quote": "Trusted execution context prevents provenance spoofing.",
+            }
+        ],
+    }
+
+    assert client.post("/internal/tools/save_memory", json=arguments).status_code == 400
+    spoofed = client.post(
+        "/internal/tools/save_memory",
+        json={**arguments, "source_session_id": "spoofed"},
+        headers={"X-Scholar-Session-Id": "trusted-session"},
+    )
+    assert spoofed.status_code == 400
+    saved = client.post(
+        "/internal/tools/save_memory",
+        json=arguments,
+        headers={
+            "X-Scholar-Runtime-Type": "pi",
+            "X-Scholar-Session-Id": "trusted-session",
+            "X-Scholar-Entry-Id": "trusted-entry",
+            "X-Scholar-Trace-Run-Id": "trusted-run",
+            "X-Scholar-Tool-Call-Id": "trusted-call",
+        },
+    )
+
+    assert saved.status_code == 200
+    memory = memories.get(saved.json()["memory"]["id"])
+    assert memory.source_session_id == "trusted-session"
+    assert memory.source_entry_id == "trusted-entry"
+    assert memory.trace_run_id == "trusted-run"
+    assert memory.source_tool_call_id == "trusted-call"
+
+
 def test_trace_read_apis(tmp_path) -> None:
     trace_repository = SQLiteTraceRepository(tmp_path / "trace.db")
     run = trace_repository.create_run("fake", external_session_id="session-api")

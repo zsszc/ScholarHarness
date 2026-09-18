@@ -116,6 +116,14 @@ Python tools are registered once in `ToolRegistry`. MiniPyRuntime will call the
 registry directly. Pi calls the same tools through a thin TypeScript extension and
 localhost HTTP. The extension contains no retrieval or memory business logic.
 
+Tool arguments and execution identity cross separate boundaries. Legacy handlers
+receive only their validated Pydantic input; context-aware handlers additionally
+receive an immutable `ToolExecutionContext`. MiniPy supplies session, assistant
+entry, and call ids. `TracingRuntime` binds run identity with a task-local
+`ContextVar`, so concurrent runs cannot leak provenance. Pi supplies its read-only
+session/leaf identity and call id in dedicated localhost HTTP headers. None of these
+fields appears in model-visible JSON Schema or public tool results.
+
 Tool results should preserve evidence coordinates:
 
 ```json
@@ -170,3 +178,5 @@ the policy never mutates memory status.
     append-only context entries, safe failure handling, and trace/Workbench evidence.
 15. **Memory context evaluations**: deterministic status/id/budget assertions over
     persisted injection evidence, with suite, CI, API, and Workbench compatibility.
+16. **Trusted tool execution context**: runtime-owned session/entry/run/call
+    provenance, task isolation, scoped-memory ownership, and Pi/HTTP propagation.

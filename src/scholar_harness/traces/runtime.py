@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 
 from scholar_harness.core.events import AgentEvent
 from scholar_harness.runtimes.base import AgentRuntime
+from scholar_harness.tools.context import bind_trace_execution
 from scholar_harness.traces.repository import SQLiteTraceRepository
 
 
@@ -33,25 +34,26 @@ class TracingRuntime(AgentRuntime):
         terminal_status = "completed"
         terminal_error: str | None = None
         try:
-            async for event in self._runtime.stream(prompt):
-                self._repository.update_run_context(
-                    run.id,
-                    external_session_id=event.session_id,
-                    active_leaf_id=event.entry_id,
-                )
-                self._repository.append_event(run.id, event)
-                if event.type == "agent_settled":
-                    settled = True
-                    event_status = event.data.get("status")
-                    if event_status in {"failed", "aborted"}:
-                        terminal_status = event_status
-                if event.type == "agent_end":
-                    event_status = event.data.get("status")
-                    if event_status in {"failed", "aborted"}:
-                        terminal_status = event_status
-                    if event.data.get("error") is not None:
-                        terminal_error = str(event.data["error"])
-                yield event
+            with bind_trace_execution(run.id, self._runtime_type):
+                async for event in self._runtime.stream(prompt):
+                    self._repository.update_run_context(
+                        run.id,
+                        external_session_id=event.session_id,
+                        active_leaf_id=event.entry_id,
+                    )
+                    self._repository.append_event(run.id, event)
+                    if event.type == "agent_settled":
+                        settled = True
+                        event_status = event.data.get("status")
+                        if event_status in {"failed", "aborted"}:
+                            terminal_status = event_status
+                    if event.type == "agent_end":
+                        event_status = event.data.get("status")
+                        if event_status in {"failed", "aborted"}:
+                            terminal_status = event_status
+                        if event.data.get("error") is not None:
+                            terminal_error = str(event.data["error"])
+                    yield event
         except (GeneratorExit, asyncio.CancelledError):
             self._repository.finish_run(run.id, "aborted")
             raise

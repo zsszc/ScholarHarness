@@ -7,6 +7,7 @@ from typing import Annotated, Any
 from fastapi import (
     FastAPI,
     File,
+    Header,
     HTTPException,
     Query,
     UploadFile,
@@ -43,6 +44,7 @@ from scholar_harness.papers.models import Paper, PaperSummary
 from scholar_harness.papers.pdf import PdfIngestor
 from scholar_harness.papers.repository import PaperRepository, SQLitePaperRepository
 from scholar_harness.papers.tools import build_paper_tools
+from scholar_harness.tools.context import ToolExecutionContext
 from scholar_harness.traces.models import AgentRun, ToolExecution, TraceEvent
 from scholar_harness.traces.repository import SQLiteTraceRepository
 from scholar_harness.workbench import WORKBENCH_HTML
@@ -297,9 +299,34 @@ def create_app(
         }
 
     @app.post("/internal/tools/{tool_name}")
-    async def execute_tool(tool_name: str, arguments: dict[str, object]) -> object:
+    async def execute_tool(
+        tool_name: str,
+        arguments: dict[str, object],
+        runtime_type: Annotated[
+            str | None, Header(alias="X-Scholar-Runtime-Type")
+        ] = None,
+        session_id: Annotated[
+            str | None, Header(alias="X-Scholar-Session-Id")
+        ] = None,
+        entry_id: Annotated[str | None, Header(alias="X-Scholar-Entry-Id")] = None,
+        trace_run_id: Annotated[
+            str | None, Header(alias="X-Scholar-Trace-Run-Id")
+        ] = None,
+        tool_call_id: Annotated[
+            str | None, Header(alias="X-Scholar-Tool-Call-Id")
+        ] = None,
+    ) -> object:
         try:
-            return await tools.execute(tool_name, arguments)
+            context = None
+            if any((runtime_type, session_id, entry_id, trace_run_id, tool_call_id)):
+                context = ToolExecutionContext(
+                    runtime_type=runtime_type or "http-bridge",
+                    session_id=session_id,
+                    entry_id=entry_id,
+                    trace_run_id=trace_run_id,
+                    tool_call_id=tool_call_id,
+                )
+            return await tools.execute(tool_name, arguments, context=context)
         except (KeyError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

@@ -141,6 +141,13 @@ curl -X POST http://127.0.0.1:8765/memories/MEMORY_ID/confirm
 `recall_memory` searches only `confirmed` records. Rejected and superseded records
 remain auditable in SQLite but cannot silently influence the agent.
 
+Memory provenance is harness-owned rather than model-authored. The model-visible
+`save_memory` schema contains no session, entry, run, or tool-call ids. MiniPy adds
+them through `ToolExecutionContext`, the tracing decorator adds its task-local run
+id, and the Pi extension forwards its read-only session identity through dedicated
+localhost bridge headers. Context-free administration may create global candidates;
+session and branch candidates require an owning runtime context.
+
 MiniPy chats and evaluation runs also search confirmed memory automatically before
 each turn. Global memories are eligible everywhere; session memories are eligible
 only in their originating session; branch memories remain excluded until the

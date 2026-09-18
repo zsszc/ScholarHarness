@@ -16,6 +16,7 @@ from scholar_harness.runtimes.model import (
     ModelToolCall,
     ModelToolDefinition,
 )
+from scholar_harness.tools.context import ToolExecutionContext, current_trace_binding
 from scholar_harness.tools.registry import ToolRegistry
 
 _T = TypeVar("_T")
@@ -168,8 +169,25 @@ class MiniPyRuntime(AgentRuntime):
                     for call in response.tool_calls:
                         yield self._tool_start_event(call)
                         try:
+                            binding = current_trace_binding()
                             result = await self._interruptible(
-                                self._tools.execute(call.name, call.arguments)
+                                self._tools.execute(
+                                    call.name,
+                                    call.arguments,
+                                    context=ToolExecutionContext(
+                                        runtime_type=(
+                                            binding.runtime_type
+                                            if binding
+                                            else "mini-py"
+                                        ),
+                                        session_id=self._session_id,
+                                        entry_id=assistant.entry_id,
+                                        trace_run_id=(
+                                            binding.run_id if binding else None
+                                        ),
+                                        tool_call_id=call.id,
+                                    ),
+                                )
                             )
                             is_error = False
                         except _TurnAborted:

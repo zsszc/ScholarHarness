@@ -3,11 +3,17 @@ from __future__ import annotations
 import inspect
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel
 
+from scholar_harness.tools.context import ToolExecutionContext
+
 ToolHandler = Callable[[BaseModel], Mapping[str, Any] | Awaitable[Mapping[str, Any]]]
+ContextToolHandler = Callable[
+    [BaseModel, ToolExecutionContext | None],
+    Mapping[str, Any] | Awaitable[Mapping[str, Any]],
+]
 
 
 @dataclass(frozen=True)
@@ -15,7 +21,8 @@ class Tool:
     name: str
     description: str
     input_model: type[BaseModel]
-    handler: ToolHandler
+    handler: ToolHandler | ContextToolHandler
+    context_aware: bool = False
 
     @property
     def json_schema(self) -> dict[str, Any]:
@@ -54,10 +61,21 @@ class ToolRegistry:
             for tool in self._tools.values()
         ]
 
-    async def execute(self, name: str, arguments: Mapping[str, Any]) -> Mapping[str, Any]:
+    async def execute(
+        self,
+        name: str,
+        arguments: Mapping[str, Any],
+        *,
+        context: ToolExecutionContext | None = None,
+    ) -> Mapping[str, Any]:
         tool = self.get(name)
         validated = tool.input_model.model_validate(arguments)
-        result = tool.handler(validated)
+        if tool.context_aware:
+            handler = cast(ContextToolHandler, tool.handler)
+            result = handler(validated, context)
+        else:
+            handler = cast(ToolHandler, tool.handler)
+            result = handler(validated)
         if inspect.isawaitable(result):
             result = await result
         return result
