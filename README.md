@@ -320,9 +320,12 @@ uv run scholar-harness api
 Open the Workbench and select **Agent Chat**. Browser requests cannot provide an API
 key or provider URL; the gateway reads `OPENAI_MODEL`, `OPENAI_BASE_URL`,
 `OPENAI_API_KEY`, and optional `OPENAI_TIMEOUT_SECONDS` only from the API process.
-Sessions are process-local and survive WebSocket reconnects, while their normalized
-runs remain durable in the trace database. Restarting the API intentionally clears
-the live sessions.
+Sessions survive WebSocket reconnects and API restarts. Browser-owned MiniPy entry
+trees, active leaves, compaction/fork state, and last-run links are atomically
+checkpointed in the same SQLite database. Listing restored sessions does not create
+model clients; the provider adapter is initialized only when a session is opened.
+Explicit session deletion removes the durable checkpoint, while graceful shutdown
+keeps it available for the next process.
 
 Select **Evaluation Lab** to author or edit deterministic cases, evaluate any
 terminal run, or execute the selected Case prompt in a fresh isolated session.

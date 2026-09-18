@@ -16,11 +16,13 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse, Response
 
+from scholar_harness.chat_persistence import SQLiteChatSessionRepository
 from scholar_harness.chat_sessions import (
     ChatConfigurationError,
     ChatSession,
     ChatSessionInfo,
     ChatSessionManager,
+    ChatSessionRestoreError,
     create_default_chat_manager,
 )
 from scholar_harness.evaluations.models import (
@@ -72,6 +74,7 @@ def create_app(
         tools=tools,
         traces=traces,
         context_provider=MemoryContextPolicy(memories),
+        session_repository=SQLiteChatSessionRepository(traces.database),
     )
     evaluation_runner = EvaluationRunner(chats, evaluations, evaluator)
     suite_runner = EvaluationSuiteRunner(evaluations, evaluation_runner)
@@ -157,6 +160,16 @@ def create_app(
                 _socket_error("session_not_found", f"Unknown chat session: {session_id}")
             )
             await websocket.close(code=4404)
+            return
+        except ChatConfigurationError as exc:
+            await websocket.send_json(
+                _socket_error("configuration_error", str(exc))
+            )
+            await websocket.close(code=4403)
+            return
+        except ChatSessionRestoreError as exc:
+            await websocket.send_json(_socket_error("session_corrupt", str(exc)))
+            await websocket.close(code=4410)
             return
         if not session.attach():
             await websocket.send_json(
@@ -501,6 +514,10 @@ async def _get_chat_session(
         return await manager.get(session_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ChatConfigurationError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ChatSessionRestoreError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 async def _send_chat_messages(

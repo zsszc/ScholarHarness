@@ -55,11 +55,13 @@ crosses the explicit status endpoints, passage search still crosses `ToolRegistr
 and trace payloads arrive after backend redaction and size bounding.
 
 `ChatSessionManager` composes one independent MiniPy and tracing runtime per browser
-session. Sessions and branch entries are deliberately process-local, while emitted
-runs are durable. The browser can manage prompts, abort, compaction, forks, and
-entry inspection through a normalized WebSocket protocol, but it cannot choose a
-provider URL or send credentials. Application shutdown closes every provider
-adapter owned by the manager.
+session. Browser session metadata and full append-only entry trees are atomically
+checkpointed to SQLite after turns and tree mutations. A restarted manager lists
+stored summaries without creating adapters, then lazily validates and hydrates the
+runtime when a client opens that session. The browser can manage prompts, abort,
+compaction, forks, and entry inspection through a normalized WebSocket protocol,
+but it cannot choose a provider URL or send credentials. Application shutdown
+checkpoints state and closes adapters; only explicit deletion removes the snapshot.
 
 `TracingRuntime` can wrap any runtime implementation. It persists ordered, redacted
 events and correlated tool executions while forwarding normalized events unchanged.
@@ -180,3 +182,5 @@ the policy never mutates memory status.
     persisted injection evidence, with suite, CI, API, and Workbench compatibility.
 16. **Trusted tool execution context**: runtime-owned session/entry/run/call
     provenance, task isolation, scoped-memory ownership, and Pi/HTTP propagation.
+17. **Durable browser sessions**: atomic SQLite checkpoints, validated tree restore,
+    lazy provider hydration, restart continuation, and explicit durable deletion.

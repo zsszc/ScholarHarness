@@ -2,15 +2,18 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Sequence
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
 from scholar_harness.api import create_app
+from scholar_harness.chat_persistence import ChatSessionSnapshot, SQLiteChatSessionRepository
 from scholar_harness.chat_sessions import (
     ChatConfigurationError,
     ChatSessionManager,
+    ChatSessionRestoreError,
     create_default_chat_manager,
 )
 from scholar_harness.papers.repository import InMemoryPaperRepository
@@ -32,12 +35,14 @@ class ScriptedAdapter:
     def __init__(self, responses: list[ModelResponse]) -> None:
         self.responses = responses
         self.closed = 0
+        self.calls: list[list[ModelMessage]] = []
 
     async def complete(
         self,
         messages: Sequence[ModelMessage],
         tools: Sequence[ModelToolDefinition],
     ) -> ModelResponse:
+        self.calls.append(list(messages))
         return self.responses.pop(0)
 
     async def aclose(self) -> None:
@@ -123,6 +128,210 @@ async def test_missing_server_configuration_is_explicit(tmp_path) -> None:
 
     with pytest.raises(ChatConfigurationError, match="OPENAI_MODEL"):
         await sessions.create()
+
+
+async def test_manager_restores_persisted_session_lazily_and_continues(tmp_path) -> None:
+    database = tmp_path / "durable.db"
+    store = SQLiteChatSessionRepository(database)
+    first_adapter = ScriptedAdapter([ModelResponse(content="first answer")])
+    first_manager = ChatSessionManager(
+        tools=echo_tools(),
+        traces=SQLiteTraceRepository(database),
+        adapter_factory=lambda: first_adapter,
+        session_repository=store,
+    )
+    original = await first_manager.create()
+    _ = [event async for event in original.stream("first question")]
+    original_entries = await original.entries()
+    await original.fork(original_entries[0].entry_id)
+    assert store.get(original.id).active_leaf_id == original_entries[0].entry_id
+    await original.compact("retain the answer")
+    original_info = await original.info()
+    await first_manager.close_all()
+
+    restored_adapter = ScriptedAdapter([ModelResponse(content="continued answer")])
+    factory_calls = 0
+
+    def adapter_factory():
+        nonlocal factory_calls
+        factory_calls += 1
+        return restored_adapter
+
+    second_manager = ChatSessionManager(
+        tools=echo_tools(),
+        traces=SQLiteTraceRepository(database),
+        adapter_factory=adapter_factory,
+        session_repository=SQLiteChatSessionRepository(database),
+    )
+
+    listed = await second_manager.list()
+    assert factory_calls == 0
+    assert listed[0].id == original.id
+    assert listed[0].created_at == original_info.created_at
+    assert listed[0].entry_count == original_info.entry_count
+    assert listed[0].last_run_id == original_info.last_run_id
+
+    restored = await second_manager.get(original.id)
+    assert factory_calls == 1
+    _ = [event async for event in restored.stream("continued question")]
+
+    assert [message.role for message in restored_adapter.calls[0]] == [
+        "system",
+        "user",
+    ]
+    assert "retain the answer" in restored_adapter.calls[0][0].content
+    assert restored_adapter.calls[0][1].content == "continued question"
+    assert SQLiteChatSessionRepository(database).get(original.id).last_run_id == (
+        await restored.info()
+    ).last_run_id
+    await second_manager.close_all()
+    assert SQLiteChatSessionRepository(database).get(original.id).entries
+
+
+async def test_persisted_sessions_list_without_provider_and_delete_without_hydration(
+    tmp_path,
+) -> None:
+    database = tmp_path / "unavailable-durable.db"
+    store = SQLiteChatSessionRepository(database)
+    adapter = ScriptedAdapter([ModelResponse(content="answer")])
+    available = ChatSessionManager(
+        tools=echo_tools(),
+        traces=SQLiteTraceRepository(database),
+        adapter_factory=lambda: adapter,
+        session_repository=store,
+    )
+    session = await available.create()
+    _ = [event async for event in session.stream("question")]
+    await available.close_all()
+
+    unavailable = ChatSessionManager(
+        tools=echo_tools(),
+        traces=SQLiteTraceRepository(database),
+        adapter_factory=None,
+        unavailable_reason="provider unavailable",
+        session_repository=SQLiteChatSessionRepository(database),
+    )
+
+    assert (await unavailable.list())[0].id == session.id
+    with pytest.raises(ChatConfigurationError, match="provider unavailable"):
+        await unavailable.get(session.id)
+    assert await unavailable.delete(session.id) is True
+    assert await unavailable.list() == []
+
+
+def test_persisted_session_is_listable_but_not_activated_without_provider(
+    tmp_path,
+) -> None:
+    database = tmp_path / "unavailable-api.db"
+    store = SQLiteChatSessionRepository(database)
+    store.save(
+        ChatSessionSnapshot(
+            id="stored-session",
+            created_at=datetime.now(UTC),
+        )
+    )
+    unavailable = ChatSessionManager(
+        tools=echo_tools(),
+        traces=SQLiteTraceRepository(database),
+        adapter_factory=None,
+        unavailable_reason="provider unavailable",
+        session_repository=store,
+    )
+
+    with TestClient(create_app(chat_session_manager=unavailable)) as client:
+        assert client.get("/chat/sessions").json()[0]["id"] == "stored-session"
+        response = client.get("/chat/sessions/stored-session")
+        assert response.status_code == 503
+        assert response.json()["detail"] == "provider unavailable"
+        with client.websocket_connect("/chat/sessions/stored-session/stream") as socket:
+            assert socket.receive_json() == {
+                "type": "error",
+                "code": "configuration_error",
+                "message": "provider unavailable",
+            }
+
+
+async def test_corrupt_persisted_session_fails_without_deleting_snapshot(tmp_path) -> None:
+    database = tmp_path / "corrupt-durable.db"
+    store = SQLiteChatSessionRepository(database)
+    adapter = ScriptedAdapter([ModelResponse(content="answer")])
+    source = ChatSessionManager(
+        tools=echo_tools(),
+        traces=SQLiteTraceRepository(database),
+        adapter_factory=lambda: adapter,
+        session_repository=store,
+    )
+    session = await source.create()
+    _ = [event async for event in session.stream("question")]
+    await source.close_all()
+    with store.connect() as connection:
+        connection.execute(
+            "UPDATE chat_sessions SET active_leaf_id = 'missing' WHERE id = ?",
+            (session.id,),
+        )
+
+    restore_adapter = ScriptedAdapter([])
+    restored = ChatSessionManager(
+        tools=echo_tools(),
+        traces=SQLiteTraceRepository(database),
+        adapter_factory=lambda: restore_adapter,
+        session_repository=store,
+    )
+
+    with pytest.raises(ChatSessionRestoreError, match="corrupt"):
+        await restored.get(session.id)
+    assert restore_adapter.closed == 1
+    assert (await restored.list())[0].id == session.id
+
+
+def test_websocket_session_survives_application_restart_and_deletion(tmp_path) -> None:
+    database = tmp_path / "api-restart.db"
+    store = SQLiteChatSessionRepository(database)
+    first_adapter = ScriptedAdapter([ModelResponse(content="first answer")])
+    first_manager = ChatSessionManager(
+        tools=echo_tools(),
+        traces=SQLiteTraceRepository(database),
+        adapter_factory=lambda: first_adapter,
+        session_repository=store,
+    )
+    with TestClient(create_app(chat_session_manager=first_manager)) as client:
+        session_id = client.post("/chat/sessions").json()["id"]
+        with client.websocket_connect(f"/chat/sessions/{session_id}/stream") as socket:
+            socket.receive_json()
+            socket.send_json({"type": "prompt", "content": "first question"})
+            while socket.receive_json()["type"] != "turn_complete":
+                pass
+
+    second_adapter = ScriptedAdapter([ModelResponse(content="continued answer")])
+    second_manager = ChatSessionManager(
+        tools=echo_tools(),
+        traces=SQLiteTraceRepository(database),
+        adapter_factory=lambda: second_adapter,
+        session_repository=SQLiteChatSessionRepository(database),
+    )
+    with TestClient(create_app(chat_session_manager=second_manager)) as client:
+        listed = client.get("/chat/sessions").json()
+        assert listed[0]["id"] == session_id
+        assert listed[0]["connected"] is False
+        with client.websocket_connect(f"/chat/sessions/{session_id}/stream") as socket:
+            assert socket.receive_json()["session"]["id"] == session_id
+            socket.send_json({"type": "entries"})
+            restored_entries = socket.receive_json()["entries"]
+            assert [item["data"]["content"] for item in restored_entries] == [
+                "first question",
+                "first answer",
+            ]
+            socket.send_json({"type": "prompt", "content": "continued question"})
+            while socket.receive_json()["type"] != "turn_complete":
+                pass
+        assert [message.content for message in second_adapter.calls[0]] == [
+            "first question",
+            "first answer",
+            "continued question",
+        ]
+        assert client.delete(f"/chat/sessions/{session_id}").status_code == 204
+
+    assert SQLiteChatSessionRepository(database).list() == []
 
 
 def test_chat_rest_and_scripted_websocket_tool_loop(tmp_path) -> None:

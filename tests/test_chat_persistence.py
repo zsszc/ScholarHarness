@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -63,6 +64,11 @@ def test_repository_atomically_round_trips_replaces_and_deletes(tmp_path) -> Non
     assert saved.last_run_id == "run-1"
     assert saved.entries == [first, second]
     assert repository.list()[0].entry_count == 2
+
+    invalid = snapshot.model_copy(update={"entries": [first, first]})
+    with pytest.raises(sqlite3.IntegrityError):
+        repository.save(invalid)
+    assert repository.get("session-1").entries == [first, second]
 
     replaced = snapshot.model_copy(
         update={

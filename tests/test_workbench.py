@@ -59,6 +59,8 @@ def test_workbench_chat_uses_server_session_gateway() -> None:
     assert 'make("div",`chat-message ${role}`,text)' in WORKBENCH_HTML
     assert 'event.type==="context_injection"' in WORKBENCH_HTML
     assert "memory context · ${event.data.status}" in WORKBENCH_HTML
+    assert "event.code===4403" in WORKBENCH_HTML
+    assert "持久会话仍已保留" in WORKBENCH_HTML
 
 
 def test_workbench_evaluation_lab_uses_public_contracts_and_safe_evidence() -> None:
