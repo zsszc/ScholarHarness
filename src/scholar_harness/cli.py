@@ -10,6 +10,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from scholar_harness.benchmark import run_benchmark
 from scholar_harness.chat import build_chat_tools, run_chat
 from scholar_harness.chat_sessions import (
     ChatConfigurationError,
@@ -147,7 +148,24 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Also call /scholar-health; start the API in another terminal first",
     )
+
+    benchmark = commands.add_parser(
+        "benchmark", help="Benchmark offline storage and retrieval paths"
+    )
+    benchmark.add_argument("--papers", type=_positive_int, default=100)
+    benchmark.add_argument("--passages-per-paper", type=_positive_int, default=4)
+    benchmark.add_argument("--queries", type=_positive_int, default=100)
+    benchmark.add_argument("--trace-events", type=_positive_int, default=1_000)
+    benchmark.add_argument("--database", type=Path)
+    benchmark.add_argument("--json-output", type=Path)
     return parser
+
+
+def _positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("value must be at least 1")
+    return parsed
 
 
 async def run_pi_smoke(extension: Path, *, check_service: bool = False) -> dict[str, object]:
@@ -346,6 +364,20 @@ def main() -> None:
             raise FileNotFoundError(f"Pi extension not found: {extension}")
         result = asyncio.run(run_pi_smoke(extension, check_service=args.check_service))
         print(json.dumps(result, indent=2))
+        return
+
+    if args.command == "benchmark":
+        report = run_benchmark(
+            papers=args.papers,
+            passages_per_paper=args.passages_per_paper,
+            queries=args.queries,
+            trace_events=args.trace_events,
+            database=args.database,
+        )
+        output = report.model_dump_json(indent=2) + "\n"
+        if args.json_output is not None:
+            write_text_atomic(args.json_output, output)
+        print(output, end="")
         return
 
     if args.command == "chat":
