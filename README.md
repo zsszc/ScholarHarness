@@ -171,8 +171,12 @@ GET /runs/{run_id}/tools
 Evaluation cases turn completed traces into explainable regression signals without
 calling another model. Expectations can require or forbid tools, bound tool calls
 and duration, require successful citation validation, check terminal status, and
-assert case-insensitive answer substrings. Every check records expected and observed
-evidence, and each result compares its score with the previous run for that case.
+assert case-insensitive answer substrings. They can also require a memory-context
+status or memory ids, forbid memory ids, and bound selected context items using the
+persisted `context_injection` decision rather than rerunning retrieval. Every check
+records expected and observed evidence, and each result compares its score with the
+previous run for that case. Memory checks retain ids and counts but never copy the
+injected memory body into evaluation results or CI artifacts.
 
 Create a case through the API:
 

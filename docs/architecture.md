@@ -72,6 +72,12 @@ Results compare against the previous different run for the same case, making sco
 deltas and regressions available to local workflows and CI without coupling
 evaluation policy to a runtime.
 
+Memory-context expectations use that same replay boundary. The evaluator projects
+exactly one persisted `context_injection` into status, deduplicated memory ids, and
+counts, then discards the rendered context body. Required/forbidden ids and context
+budgets can therefore gate suites and CI without querying current memory state or
+leaking memory text into evaluation artifacts.
+
 `EvaluationRunner` closes the execution/evaluation loop without adding another
 agent implementation. It loads a persisted case, creates a fresh server-owned
 MiniPy session, streams the stored prompt through the normal tracing boundary,
@@ -162,3 +168,5 @@ the policy never mutates memory status.
     documented GitHub Actions evidence publication.
 14. **Memory context policy**: trusted pre-turn recall, scope and budget controls,
     append-only context entries, safe failure handling, and trace/Workbench evidence.
+15. **Memory context evaluations**: deterministic status/id/budget assertions over
+    persisted injection evidence, with suite, CI, API, and Workbench compatibility.

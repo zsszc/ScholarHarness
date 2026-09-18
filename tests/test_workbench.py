@@ -75,6 +75,15 @@ def test_workbench_evaluation_lab_uses_public_contracts_and_safe_evidence() -> N
     assert 'make("pre","",pretty(check.expected))' in WORKBENCH_HTML
     assert 'make("pre","",pretty(check.observed))' in WORKBENCH_HTML
     assert 'value.split(",").map(item=>item.trim()).filter(Boolean)' in WORKBENCH_HTML
+    for field in (
+        "eval-required-memories",
+        "eval-forbidden-memories",
+        "eval-context-status",
+        "eval-max-context-items",
+    ):
+        assert f'id="{field}"' in WORKBENCH_HTML
+    assert "expected.required_memory_ids||[]" in WORKBENCH_HTML
+    assert "expectations.context_status" in WORKBENCH_HTML
     assert 'state.evaluationRuns.filter(run=>run.status!=="running")' in WORKBENCH_HTML
     for metric in ("metric-evals", "metric-eval-passed", "metric-regressions"):
         assert f'id="{metric}"' in WORKBENCH_HTML

@@ -6,6 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 TerminalRunStatus = Literal["completed", "failed", "aborted"]
+ContextStatus = Literal["selected", "empty", "error"]
 
 
 class EvaluationExpectations(BaseModel):
@@ -16,8 +17,18 @@ class EvaluationExpectations(BaseModel):
     require_citation_validation: bool = False
     answer_contains: list[str] = Field(default_factory=list, max_length=50)
     terminal_status: TerminalRunStatus | None = None
+    context_status: ContextStatus | None = None
+    required_memory_ids: list[str] = Field(default_factory=list, max_length=50)
+    forbidden_memory_ids: list[str] = Field(default_factory=list, max_length=50)
+    max_context_items: int | None = Field(default=None, ge=0, le=50)
 
-    @field_validator("required_tools", "forbidden_tools", "answer_contains")
+    @field_validator(
+        "required_tools",
+        "forbidden_tools",
+        "answer_contains",
+        "required_memory_ids",
+        "forbidden_memory_ids",
+    )
     @classmethod
     def normalize_string_list(cls, values: list[str]) -> list[str]:
         normalized: list[str] = []
@@ -37,6 +48,14 @@ class EvaluationExpectations(BaseModel):
         if overlap:
             names = ", ".join(sorted(overlap))
             raise ValueError(f"tools cannot be both required and forbidden: {names}")
+        memory_overlap = set(self.required_memory_ids) & set(
+            self.forbidden_memory_ids
+        )
+        if memory_overlap:
+            names = ", ".join(sorted(memory_overlap))
+            raise ValueError(
+                f"memories cannot be both required and forbidden: {names}"
+            )
         configured = any(
             (
                 self.required_tools,
@@ -46,6 +65,10 @@ class EvaluationExpectations(BaseModel):
                 self.require_citation_validation,
                 self.answer_contains,
                 self.terminal_status is not None,
+                self.context_status is not None,
+                self.required_memory_ids,
+                self.forbidden_memory_ids,
+                self.max_context_items is not None,
             )
         )
         if not configured:

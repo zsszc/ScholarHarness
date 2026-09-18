@@ -156,6 +156,113 @@ def test_expectation_validation_rejects_empty_and_contradictory_cases() -> None:
         EvaluationExpectations(required_tools=["search"], forbidden_tools=["search"])
     with pytest.raises(ValidationError, match="cannot be empty"):
         EvaluationExpectations(answer_contains=["  "])
+    with pytest.raises(ValidationError, match="memories cannot be both"):
+        EvaluationExpectations(
+            required_memory_ids=["memory-1"],
+            forbidden_memory_ids=["memory-1"],
+        )
+
+    normalized = EvaluationExpectations(
+        required_memory_ids=[" memory-1 ", "memory-1"],
+        max_context_items=2,
+    )
+    assert normalized.required_memory_ids == ["memory-1"]
+
+
+def test_evaluator_checks_persisted_memory_context_without_content(tmp_path) -> None:
+    database = tmp_path / "memory-eval.db"
+    traces = SQLiteTraceRepository(database)
+    evaluations = SQLiteEvaluationRepository(database)
+    case = evaluations.create_case(
+        case_input(
+            context_status="selected",
+            required_memory_ids=["memory-1"],
+            forbidden_memory_ids=["memory-secret"],
+            max_context_items=2,
+        )
+    )
+    run = completed_run(traces)
+    traces.append_event(
+        run.id,
+        AgentEvent(
+            type="context_injection",
+            session_id="session-eval",
+            data={
+                "status": "selected",
+                "selected_ids": ["memory-1", "memory-2", "memory-2"],
+                "selected_count": 3,
+                "content": "must never enter evaluation evidence",
+            },
+        ),
+    )
+
+    result = TraceEvaluator(traces, evaluations).evaluate(case.id, run.id)
+
+    assert result.passed is True
+    assert [check.id for check in result.checks] == [
+        "context_status",
+        "required_memory:memory-1",
+        "forbidden_memory:memory-secret",
+        "context_item_limit",
+    ]
+    assert all(check.passed for check in result.checks)
+    assert "must never" not in result.model_dump_json()
+    assert result.checks[0].observed["reported_selected_count"] == 3
+    assert result.checks[0].observed["selected_ids"] == ["memory-1", "memory-2"]
+
+
+@pytest.mark.parametrize("payload", [None, {"status": "selected", "selected_ids": [1]}])
+def test_missing_or_malformed_context_fails_safely(tmp_path, payload) -> None:
+    database = tmp_path / f"invalid-{payload is None}.db"
+    traces = SQLiteTraceRepository(database)
+    evaluations = SQLiteEvaluationRepository(database)
+    case = evaluations.create_case(case_input(required_memory_ids=["memory-1"]))
+    run = completed_run(traces)
+    if payload is not None:
+        payload["selected_count"] = 1
+        payload["content"] = "private memory body"
+        traces.append_event(
+            run.id,
+            AgentEvent(
+                type="context_injection", session_id="session-eval", data=payload
+            ),
+        )
+
+    result = TraceEvaluator(traces, evaluations).evaluate(case.id, run.id)
+
+    assert result.passed is False
+    assert result.checks[0].observed["reason"] in {
+        "missing_event",
+        "invalid_payload",
+    }
+    assert "private memory body" not in result.model_dump_json()
+
+
+def test_duplicate_context_events_are_invalid_evidence(tmp_path) -> None:
+    database = tmp_path / "duplicate-context.db"
+    traces = SQLiteTraceRepository(database)
+    evaluations = SQLiteEvaluationRepository(database)
+    case = evaluations.create_case(case_input(context_status="selected"))
+    run = completed_run(traces)
+    for memory_id in ("memory-1", "memory-2"):
+        traces.append_event(
+            run.id,
+            AgentEvent(
+                type="context_injection",
+                session_id="session-eval",
+                data={
+                    "status": "selected",
+                    "selected_ids": [memory_id],
+                    "selected_count": 1,
+                },
+            ),
+        )
+
+    result = TraceEvaluator(traces, evaluations).evaluate(case.id, run.id)
+
+    assert result.passed is False
+    assert result.checks[0].observed["reason"] == "duplicate_events"
+    assert result.checks[0].observed["selected_ids"] == []
 
 
 def test_case_repository_persists_updates_and_order(tmp_path) -> None:
@@ -315,13 +422,21 @@ def test_evaluation_api_workflow_and_errors(tmp_path) -> None:
         evaluation_repository=evaluations,
     )
     payload = case_input(
-        required_tools=["search_papers"], terminal_status="completed"
+        required_tools=["search_papers"],
+        terminal_status="completed",
+        context_status="selected",
+        required_memory_ids=["memory-api"],
+        forbidden_memory_ids=["memory-private"],
+        max_context_items=2,
     ).model_dump(mode="json")
 
     with TestClient(app) as client:
         created = client.post("/evaluations/cases", json=payload)
         assert created.status_code == 201
         case_id = created.json()["id"]
+        assert created.json()["expectations"]["required_memory_ids"] == [
+            "memory-api"
+        ]
         assert client.get("/evaluations/cases").json()[0]["id"] == case_id
         assert client.get(f"/evaluations/cases/{case_id}").status_code == 200
 

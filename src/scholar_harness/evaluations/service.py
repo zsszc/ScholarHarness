@@ -166,6 +166,61 @@ class TraceEvaluator:
                 )
             )
 
+        if any(
+            (
+                expected.context_status is not None,
+                expected.required_memory_ids,
+                expected.forbidden_memory_ids,
+                expected.max_context_items is not None,
+            )
+        ):
+            context = self._context_observation(events)
+            if expected.context_status is not None:
+                checks.append(
+                    self._check(
+                        "context_status",
+                        context["valid"]
+                        and context["status"] == expected.context_status,
+                        f"Context status is {context['status'] or context['reason']}",
+                        {"status": expected.context_status},
+                        context,
+                    )
+                )
+            selected_ids = set(context["selected_ids"])
+            for memory_id in expected.required_memory_ids:
+                checks.append(
+                    self._check(
+                        f"required_memory:{memory_id}",
+                        context["valid"] and memory_id in selected_ids,
+                        f"Required memory {memory_id} "
+                        f"{'was' if memory_id in selected_ids else 'was not'} selected",
+                        {"memory_id": memory_id, "selected": True},
+                        context,
+                    )
+                )
+            for memory_id in expected.forbidden_memory_ids:
+                checks.append(
+                    self._check(
+                        f"forbidden_memory:{memory_id}",
+                        context["valid"] and memory_id not in selected_ids,
+                        f"Forbidden memory {memory_id} "
+                        f"{'was' if memory_id in selected_ids else 'was not'} selected",
+                        {"memory_id": memory_id, "selected": False},
+                        context,
+                    )
+                )
+            if expected.max_context_items is not None:
+                checks.append(
+                    self._check(
+                        "context_item_limit",
+                        context["valid"]
+                        and len(selected_ids) <= expected.max_context_items,
+                        f"Context selected {len(selected_ids)} unique memory item(s)",
+                        {"maximum": expected.max_context_items},
+                        context,
+                    )
+                )
+
         answer = "".join(
             str(event.payload.get("delta") or "")
             for event in events
@@ -184,6 +239,46 @@ class TraceEvaluator:
                 )
             )
         return checks
+
+    @staticmethod
+    def _context_observation(events: list[TraceEvent]) -> dict[str, Any]:
+        matching = [
+            event for event in events if event.event_type == "context_injection"
+        ]
+        observation: dict[str, Any] = {
+            "valid": False,
+            "reason": "missing_event" if not matching else "duplicate_events",
+            "event_count": len(matching),
+            "status": None,
+            "selected_ids": [],
+            "reported_selected_count": None,
+        }
+        if len(matching) != 1:
+            return observation
+        payload = matching[0].payload
+        status = payload.get("status")
+        selected_ids = payload.get("selected_ids")
+        reported_count = payload.get("selected_count")
+        if (
+            status not in {"selected", "empty", "error"}
+            or not isinstance(selected_ids, list)
+            or not all(isinstance(item, str) and item for item in selected_ids)
+            or isinstance(reported_count, bool)
+            or not isinstance(reported_count, int)
+            or reported_count < 0
+        ):
+            observation["reason"] = "invalid_payload"
+            return observation
+        observation.update(
+            {
+                "valid": True,
+                "reason": None,
+                "status": status,
+                "selected_ids": list(dict.fromkeys(selected_ids)),
+                "reported_selected_count": reported_count,
+            }
+        )
+        return observation
 
     @staticmethod
     def _check(
