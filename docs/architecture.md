@@ -145,6 +145,10 @@ Agents may propose memories, but cannot make them trusted. `save_memory` verifie
 verbatim evidence against a stored passage and creates a `candidate`. Only an
 explicit API action can mark it `confirmed`; `recall_memory` excludes every other
 status. Rejected and superseded rows remain stored for audit and evaluation.
+Reviewed supersession atomically links an old confirmed row to a distinct active
+confirmed replacement. Matching kind, scope, and scoped-session ownership prevent
+cross-boundary consolidation; active-only targets keep the relation graph at depth
+one and rule out cycles.
 
 `MemoryContextPolicy` applies the same boundary automatically to API chat, CLI chat,
 case execution, suite execution, and CI gates. It preserves deterministic FTS
@@ -184,3 +188,5 @@ the policy never mutates memory status.
     provenance, task isolation, scoped-memory ownership, and Pi/HTTP propagation.
 17. **Durable browser sessions**: atomic SQLite checkpoints, validated tree restore,
     lazy provider hydration, restart continuation, and explicit durable deletion.
+18. **Auditable memory supersession**: atomic reviewed replacement links, trust-
+    boundary validation, chain prevention, and recall-safe consolidation.

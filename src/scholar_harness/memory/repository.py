@@ -68,6 +68,7 @@ class SQLiteMemoryRepository:
             self._ensure_column(
                 connection, "memories", "source_tool_call_id", "TEXT"
             )
+            self._ensure_column(connection, "memories", "superseded_by_id", "TEXT")
 
     def create_candidate(
         self,
@@ -157,14 +158,66 @@ class SQLiteMemoryRepository:
             ]
 
     def set_status(self, memory_id: str, status: MemoryStatus) -> Memory:
+        if status == "superseded":
+            raise ValueError("Use supersede() to record a replacement memory")
         now = datetime.now(UTC).isoformat()
         with self.connect() as connection:
-            cursor = connection.execute(
+            current = connection.execute(
+                "SELECT status FROM memories WHERE id = ?", (memory_id,)
+            ).fetchone()
+            if current is None:
+                raise KeyError(f"Unknown memory: {memory_id}")
+            if current["status"] == "superseded":
+                raise ValueError("A superseded memory cannot change status")
+            connection.execute(
                 "UPDATE memories SET status = ?, updated_at = ? WHERE id = ?",
                 (status, now, memory_id),
             )
-            if cursor.rowcount == 0:
+        return self.get(memory_id)
+
+    def supersede(self, memory_id: str, replacement_id: str) -> Memory:
+        if memory_id == replacement_id:
+            raise ValueError("A memory cannot supersede itself")
+        with self.connect() as connection:
+            source = connection.execute(
+                "SELECT * FROM memories WHERE id = ?", (memory_id,)
+            ).fetchone()
+            if source is None:
                 raise KeyError(f"Unknown memory: {memory_id}")
+            replacement = connection.execute(
+                "SELECT * FROM memories WHERE id = ?", (replacement_id,)
+            ).fetchone()
+            if replacement is None:
+                raise KeyError(f"Unknown memory: {replacement_id}")
+            if (
+                source["status"] == "superseded"
+                and source["superseded_by_id"] == replacement_id
+            ):
+                return self._to_memory(
+                    source, self._load_evidence(connection, memory_id)
+                )
+            if source["status"] != "confirmed":
+                raise ValueError("Only an active confirmed memory can be superseded")
+            if replacement["status"] != "confirmed":
+                raise ValueError("Replacement must be an active confirmed memory")
+            if source["kind"] != replacement["kind"]:
+                raise ValueError("Replacement must have the same memory kind")
+            if source["scope"] != replacement["scope"]:
+                raise ValueError("Replacement must have the same memory scope")
+            if (
+                source["scope"] != "global"
+                and source["source_session_id"] != replacement["source_session_id"]
+            ):
+                raise ValueError("Replacement must have the same scoped-memory owner")
+            now = datetime.now(UTC).isoformat()
+            connection.execute(
+                """
+                UPDATE memories
+                SET status = 'superseded', superseded_by_id = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (replacement_id, now, memory_id),
+            )
         return self.get(memory_id)
 
     def search_confirmed(self, query: str, limit: int = 5) -> list[dict[str, object]]:
@@ -223,6 +276,7 @@ class SQLiteMemoryRepository:
             source_entry_id=row["source_entry_id"],
             trace_run_id=row["trace_run_id"],
             source_tool_call_id=row["source_tool_call_id"],
+            superseded_by_id=row["superseded_by_id"],
             created_at=row["created_at"],
             updated_at=row["updated_at"],
         )

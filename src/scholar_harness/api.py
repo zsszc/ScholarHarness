@@ -39,7 +39,7 @@ from scholar_harness.evaluations.runner import EvaluationExecutionError, Evaluat
 from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
 from scholar_harness.evaluations.suites import EvaluationSuiteRunner
 from scholar_harness.memory.context import MemoryContextPolicy
-from scholar_harness.memory.models import Memory, MemoryStatus
+from scholar_harness.memory.models import Memory, MemoryStatus, SupersedeMemoryInput
 from scholar_harness.memory.repository import SQLiteMemoryRepository
 from scholar_harness.memory.tools import build_memory_tools
 from scholar_harness.papers.models import Paper, PaperSummary
@@ -356,6 +356,8 @@ def create_app(
             return memories.set_status(memory_id, "confirmed")
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @app.post("/memories/{memory_id}/reject")
     async def reject_memory(memory_id: str) -> Memory:
@@ -363,6 +365,19 @@ def create_app(
             return memories.set_status(memory_id, "rejected")
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.post("/memories/{memory_id}/supersede")
+    async def supersede_memory(
+        memory_id: str, request: SupersedeMemoryInput
+    ) -> Memory:
+        try:
+            return memories.supersede(memory_id, request.replacement_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @app.get("/runs")
     async def list_runs(

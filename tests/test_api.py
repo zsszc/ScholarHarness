@@ -142,6 +142,45 @@ def test_memory_confirmation_api(tmp_path) -> None:
     assert confirmed.json()["status"] == "confirmed"
 
 
+def test_memory_supersession_api_reports_transition_conflicts(tmp_path) -> None:
+    memories = SQLiteMemoryRepository(tmp_path / "supersede-api.db")
+    old = memories.create_candidate(
+        content="Old rule",
+        kind="semantic",
+        scope="global",
+        confidence=0.5,
+        evidence=[],
+    )
+    replacement = memories.create_candidate(
+        content="New rule",
+        kind="semantic",
+        scope="global",
+        confidence=0.9,
+        evidence=[],
+    )
+    memories.set_status(old.id, "confirmed")
+    memories.set_status(replacement.id, "confirmed")
+    client = TestClient(create_app(memory_repository=memories))
+
+    changed = client.post(
+        f"/memories/{old.id}/supersede",
+        json={"replacement_id": replacement.id},
+    )
+    missing = client.post(
+        "/memories/missing/supersede",
+        json={"replacement_id": replacement.id},
+    )
+    conflict = client.post(
+        f"/memories/{replacement.id}/supersede",
+        json={"replacement_id": replacement.id},
+    )
+
+    assert changed.status_code == 200
+    assert changed.json()["superseded_by_id"] == replacement.id
+    assert missing.status_code == 404
+    assert conflict.status_code == 409
+
+
 def test_http_tool_context_owns_memory_provenance(tmp_path) -> None:
     repository = InMemoryPaperRepository()
     repository.add(

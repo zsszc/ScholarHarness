@@ -136,10 +136,16 @@ every quoted source occurs in the referenced paper passage and stores the result
 ```bash
 curl http://127.0.0.1:8765/memories?status=candidate
 curl -X POST http://127.0.0.1:8765/memories/MEMORY_ID/confirm
+curl -X POST http://127.0.0.1:8765/memories/OLD_ID/supersede \
+  -H 'content-type: application/json' \
+  -d '{"replacement_id":"CONFIRMED_REPLACEMENT_ID"}'
 ```
 
 `recall_memory` searches only `confirmed` records. Rejected and superseded records
-remain auditable in SQLite but cannot silently influence the agent.
+remain auditable in SQLite but cannot silently influence the agent. Supersession is
+an explicit reviewer operation: it preserves the old content, evidence, and
+provenance while recording its active confirmed replacement. Kind, scope, and
+scoped-session ownership must match, and replacement chains are rejected.
 
 Memory provenance is harness-owned rather than model-authored. The model-visible
 `save_memory` schema contains no session, entry, run, or tool-call ids. MiniPy adds

@@ -1,3 +1,5 @@
+import sqlite3
+
 import pytest
 
 from scholar_harness.memory.context import MemoryContextPolicy
@@ -134,3 +136,135 @@ def test_memory_status_persists(memory_system) -> None:
     assert confirmed.status == "confirmed"
     assert memories.list(status="candidate") == []
     assert memories.list(status="confirmed")[0].id == created.id
+
+
+def test_memory_repository_additively_migrates_supersession_column(tmp_path) -> None:
+    database = tmp_path / "legacy-memory.db"
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            """
+            CREATE TABLE memories (
+                id TEXT PRIMARY KEY, content TEXT NOT NULL, kind TEXT NOT NULL,
+                scope TEXT NOT NULL, status TEXT NOT NULL, confidence REAL NOT NULL,
+                source_session_id TEXT, source_entry_id TEXT, trace_run_id TEXT,
+                source_tool_call_id TEXT, created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+
+    repository = SQLiteMemoryRepository(database)
+    with repository.connect() as connection:
+        columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(memories)").fetchall()
+        }
+
+    assert "superseded_by_id" in columns
+
+
+def test_confirmed_memory_can_be_superseded_atomically(memory_system) -> None:
+    memories, tools = memory_system
+    old = memories.create_candidate(
+        content="Old provenance guidance",
+        kind="semantic",
+        scope="global",
+        confidence=0.5,
+        evidence=[],
+    )
+    replacement = memories.create_candidate(
+        content="Replacement provenance guidance",
+        kind="semantic",
+        scope="global",
+        confidence=0.9,
+        evidence=[],
+    )
+    memories.set_status(old.id, "confirmed")
+    memories.set_status(replacement.id, "confirmed")
+
+    superseded = memories.supersede(old.id, replacement.id)
+    repeated = memories.supersede(old.id, replacement.id)
+
+    assert superseded.status == "superseded"
+    assert superseded.superseded_by_id == replacement.id
+    assert repeated == superseded
+    assert superseded.content == "Old provenance guidance"
+    assert memories.get(replacement.id).status == "confirmed"
+    with pytest.raises(ValueError, match="cannot change status"):
+        memories.set_status(old.id, "confirmed")
+    with pytest.raises(ValueError, match="record a replacement"):
+        memories.set_status(replacement.id, "superseded")
+
+
+def test_supersession_rejects_invalid_trust_transitions(memory_system) -> None:
+    memories, _tools = memory_system
+
+    def add(
+        content: str,
+        *,
+        kind: str = "semantic",
+        scope: str = "global",
+        owner: str | None = None,
+        confirmed: bool = True,
+    ):
+        item = memories.create_candidate(
+            content=content,
+            kind=kind,  # type: ignore[arg-type]
+            scope=scope,  # type: ignore[arg-type]
+            confidence=0.5,
+            evidence=[],
+            source_session_id=owner,
+        )
+        return memories.set_status(item.id, "confirmed") if confirmed else item
+
+    source = add("source")
+    kind_mismatch = add("kind mismatch", kind="procedural")
+    scope_mismatch = add("scope mismatch", scope="session", owner="session-a")
+    candidate = add("candidate", confirmed=False)
+    owner_a = add("owner a", scope="session", owner="session-a")
+    owner_b = add("owner b", scope="session", owner="session-b")
+
+    invalid = [
+        (source.id, source.id),
+        (source.id, kind_mismatch.id),
+        (source.id, scope_mismatch.id),
+        (source.id, candidate.id),
+        (owner_a.id, owner_b.id),
+    ]
+    for memory_id, replacement_id in invalid:
+        with pytest.raises(ValueError):
+            memories.supersede(memory_id, replacement_id)
+    assert memories.get(source.id).status == "confirmed"
+    assert memories.get(source.id).superseded_by_id is None
+
+    replacement = add("replacement")
+    final = add("final")
+    memories.supersede(replacement.id, final.id)
+    with pytest.raises(ValueError, match="active confirmed"):
+        memories.supersede(source.id, replacement.id)
+
+
+@pytest.mark.asyncio
+async def test_recall_excludes_superseded_memory(memory_system) -> None:
+    memories, tools = memory_system
+    old = memories.create_candidate(
+        content="provenance old rule",
+        kind="semantic",
+        scope="global",
+        confidence=0.5,
+        evidence=[],
+    )
+    replacement = memories.create_candidate(
+        content="provenance replacement rule",
+        kind="semantic",
+        scope="global",
+        confidence=0.9,
+        evidence=[],
+    )
+    memories.set_status(old.id, "confirmed")
+    memories.set_status(replacement.id, "confirmed")
+    memories.supersede(old.id, replacement.id)
+
+    recalled = await tools.execute("recall_memory", {"query": "provenance"})
+
+    assert [item["id"] for item in recalled["items"]] == [replacement.id]

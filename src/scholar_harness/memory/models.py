@@ -29,6 +29,7 @@ class Memory(BaseModel):
     source_entry_id: str | None = None
     trace_run_id: str | None = None
     source_tool_call_id: str | None = None
+    superseded_by_id: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -46,3 +47,9 @@ class SaveMemoryInput(BaseModel):
 class RecallMemoryInput(BaseModel):
     query: str = Field(min_length=1)
     limit: int = Field(default=5, ge=1, le=50)
+
+
+class SupersedeMemoryInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    replacement_id: str = Field(min_length=1)
