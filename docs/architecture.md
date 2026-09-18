@@ -79,6 +79,12 @@ the suite and case intent, executes isolated cases sequentially, continues after
 safe per-item orchestration error, and persists aggregate counts plus evidence
 links. Definition edits therefore affect future runs without rewriting history.
 
+The CI report boundary remains downstream of persisted suite execution. It converts
+one immutable `EvaluationSuiteRun` into JSON and JUnit without calling a model or
+recomputing pass state. Report files use same-directory temporary files plus atomic
+replacement; the dedicated `eval-gate` command maps the persisted aggregate to
+quality-gate exit codes while leaving interactive `eval-suite-run` behavior intact.
+
 The Workbench Evaluation Lab remains a presentation client. It submits typed case
 documents, asks the server to execute a case or grade an existing terminal run, and
 renders persisted checks and history through public evaluation APIs. Input
@@ -138,3 +144,5 @@ status. Rejected and superseded rows remain stored for audit and evaluation.
     history, failure isolation, HTTP workflows, and CI-friendly CLI output.
 12. **Suite workbench**: ordered suite authoring, aggregate execution/history,
     item-level diagnostics, and overview regression-gate metrics.
+13. **CI regression gate**: stable exit semantics, atomic JSON/JUnit artifacts, and
+    documented GitHub Actions evidence publication.

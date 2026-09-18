@@ -10,6 +10,11 @@ from scholar_harness.evaluations.models import (
     EvaluationSuiteItem,
     EvaluationSuiteRun,
 )
+from scholar_harness.evaluations.reports import (
+    suite_run_json,
+    suite_run_junit,
+    write_text_atomic,
+)
 from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
 from scholar_harness.evaluations.runner import EvaluationExecutionError, EvaluationRunner
 from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
@@ -32,4 +37,7 @@ __all__ = [
     "EvaluationSuiteRunner",
     "SQLiteEvaluationRepository",
     "TraceEvaluator",
+    "suite_run_json",
+    "suite_run_junit",
+    "write_text_atomic",
 ]

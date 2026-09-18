@@ -17,6 +17,11 @@ from scholar_harness.chat_sessions import (
     create_default_chat_manager,
 )
 from scholar_harness.evaluations.models import EvaluationExecution, EvaluationSuiteRun
+from scholar_harness.evaluations.reports import (
+    suite_run_json,
+    suite_run_junit,
+    write_text_atomic,
+)
 from scholar_harness.evaluations.repository import SQLiteEvaluationRepository
 from scholar_harness.evaluations.runner import EvaluationExecutionError, EvaluationRunner
 from scholar_harness.evaluations.service import EvaluationConflictError, TraceEvaluator
@@ -102,6 +107,16 @@ def build_parser() -> argparse.ArgumentParser:
     eval_suite_run.add_argument(
         "--database", type=Path, default=Path("data/scholar_harness.db")
     )
+
+    eval_gate = commands.add_parser(
+        "eval-gate", help="Execute an evaluation suite as a CI quality gate"
+    )
+    eval_gate.add_argument("--suite", required=True, dest="suite_id")
+    eval_gate.add_argument(
+        "--database", type=Path, default=Path("data/scholar_harness.db")
+    )
+    eval_gate.add_argument("--json-output", type=Path)
+    eval_gate.add_argument("--junit-output", type=Path)
 
     smoke = commands.add_parser("pi-smoke", help="Run a real Pi RPC and extension smoke test")
     smoke.add_argument(
@@ -353,6 +368,27 @@ def main() -> None:
         except (ChatConfigurationError, KeyError) as exc:
             parser.error(str(exc))
         print(suite_run.model_dump_json(indent=2))
+        return
+
+    if args.command == "eval-gate":
+        try:
+            suite_run = asyncio.run(
+                run_configured_evaluation_suite(args.suite_id, args.database)
+            )
+            if suite_run.items and all(
+                item.error == "configuration_error" for item in suite_run.items
+            ):
+                raise ChatConfigurationError("OPENAI_MODEL is required")
+            json_report = suite_run_json(suite_run)
+            if args.json_output is not None:
+                write_text_atomic(args.json_output, json_report)
+            if args.junit_output is not None:
+                write_text_atomic(args.junit_output, suite_run_junit(suite_run))
+        except (ChatConfigurationError, KeyError, OSError) as exc:
+            parser.error(str(exc))
+        print(json_report, end="")
+        if not suite_run.passed:
+            raise SystemExit(1)
         return
 
     python_status = sys.version.split()[0]

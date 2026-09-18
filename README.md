@@ -232,6 +232,21 @@ case membership, move cases up or down, execute the regression gate, and inspect
 aggregate history plus every case outcome. Overview reports total and passing suite
 runs from the same persisted API contract.
 
+Use the CI gate command when suite failure must fail a job and produce portable
+evidence:
+
+```bash
+uv run scholar-harness eval-gate \
+  --suite SUITE_ID \
+  --database data/scholar_harness.db \
+  --json-output artifacts/evaluation-gate.json \
+  --junit-output artifacts/evaluation-gate.xml
+```
+
+The command exits `0` for a passing suite, `1` for a completed failing suite, and
+`2` for configuration or invocation errors. See [docs/ci.md](docs/ci.md) for report
+semantics and a GitHub Actions workflow that publishes evidence even on failure.
+
 ## Educational Python runtime
 
 `MiniPyRuntime` implements the same `AgentRuntime` contract as Pi while keeping the
