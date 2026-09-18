@@ -17,6 +17,8 @@ def test_pi_extension_hides_and_forwards_memory_provenance() -> None:
     assert "executionHeaders(toolCallId, ctx)" in source
     assert '"X-Scholar-Session-Id": ctx.sessionManager.getSessionId()' in source
     assert '"X-Scholar-Tool-Call-Id": toolCallId' in source
+    assert "process.env.SCHOLAR_HARNESS_BRIDGE_TOKEN?.trim()" in source
+    assert 'headers["X-Scholar-Bridge-Token"] = bridgeToken' in source
 
 
 async def test_pi_runtime_streams_events_and_normalizes_entries() -> None:

@@ -2,6 +2,7 @@ import { Type } from "@earendil-works/pi-ai";
 import { defineTool, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 const baseUrl = process.env.SCHOLAR_HARNESS_URL ?? "http://127.0.0.1:8765";
+const bridgeToken = process.env.SCHOLAR_HARNESS_BRIDGE_TOKEN?.trim();
 
 async function callPythonTool(name: string, input: unknown, provenance: Record<string, string> = {}): Promise<unknown> {
   const response = await fetch(`${baseUrl}/internal/tools/${name}`, {
@@ -23,6 +24,7 @@ function executionHeaders(toolCallId: string, ctx: ExtensionContext): Record<str
   };
   const leafId = ctx.sessionManager.getLeafId();
   if (leafId) headers["X-Scholar-Entry-Id"] = leafId;
+  if (bridgeToken) headers["X-Scholar-Bridge-Token"] = bridgeToken;
   return headers;
 }
 

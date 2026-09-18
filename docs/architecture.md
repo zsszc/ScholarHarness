@@ -67,6 +67,13 @@ checkpoints state and closes adapters; only explicit deletion removes the snapsh
 events and correlated tool executions while forwarding normalized events unchanged.
 Stable session entries use idempotency keys; live deltas remain distinct for replay.
 
+All SQLite-backed components obtain connections from one storage policy. Named
+rows, foreign keys, a five-second busy timeout, WAL journal mode, and normal
+synchronous durability apply consistently across papers, memory, traces,
+evaluations, and durable browser sessions. Domain repositories retain their own
+schemas and transaction boundaries; the policy only standardizes concurrency and
+durability behavior.
+
 `TraceEvaluator` is downstream of trace persistence and never calls the model. It
 combines an editable evaluation case with an immutable terminal run, emits one
 evidence-bearing check per expectation, and persists a case snapshot plus score.
@@ -136,6 +143,11 @@ entry, and call ids. `TracingRuntime` binds run identity with a task-local
 `ContextVar`, so concurrent runs cannot leak provenance. Pi supplies its read-only
 session/leaf identity and call id in dedicated localhost HTTP headers. None of these
 fields appears in model-visible JSON Schema or public tool results.
+When `SCHOLAR_HARNESS_BRIDGE_TOKEN` is configured, provenance-bearing bridge calls
+must also carry the matching environment-sourced token. Constant-time validation
+happens before tool lookup or context construction. Health and provenance-free
+local retrieval remain available, while trusted provenance cannot be forged by an
+unauthenticated localhost caller.
 
 Tool results should preserve evidence coordinates:
 
@@ -203,3 +215,5 @@ the policy never mutates memory status.
     boundary validation, chain prevention, and recall-safe consolidation.
 19. **Runtime parity reports**: versioned semantic trace projection, explainable
     Pi/MiniPy contract checks, privacy-aware output comparison, and CI exit semantics.
+20. **Production boundary hardening**: authenticated Pi provenance, shared SQLite
+    WAL/busy-timeout policy, deterministic contention handling, and operations docs.

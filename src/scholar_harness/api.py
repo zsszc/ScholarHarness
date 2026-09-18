@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import secrets
 from contextlib import asynccontextmanager, suppress
 from typing import Annotated, Any
 
@@ -61,11 +63,17 @@ def create_app(
     trace_repository: SQLiteTraceRepository | None = None,
     chat_session_manager: ChatSessionManager | None = None,
     evaluation_repository: SQLiteEvaluationRepository | None = None,
+    bridge_token: str | None = None,
 ) -> FastAPI:
     paper_repository = repository or SQLitePaperRepository("data/scholar_harness.db")
     memories = memory_repository or SQLiteMemoryRepository("data/scholar_harness.db")
     traces = trace_repository or SQLiteTraceRepository("data/scholar_harness.db")
     evaluations = evaluation_repository or SQLiteEvaluationRepository(traces.database)
+    configured_bridge_token = (
+        bridge_token
+        if bridge_token is not None
+        else os.environ.get("SCHOLAR_HARNESS_BRIDGE_TOKEN", "")
+    ).strip()
     evaluator = TraceEvaluator(traces, evaluations)
     ingestor = pdf_ingestor or PdfIngestor()
     tools = build_paper_tools(paper_repository)
@@ -328,10 +336,24 @@ def create_app(
         tool_call_id: Annotated[
             str | None, Header(alias="X-Scholar-Tool-Call-Id")
         ] = None,
+        supplied_bridge_token: Annotated[
+            str | None, Header(alias="X-Scholar-Bridge-Token")
+        ] = None,
     ) -> object:
+        has_provenance = any(
+            (runtime_type, session_id, entry_id, trace_run_id, tool_call_id)
+        )
+        if configured_bridge_token and has_provenance and not secrets.compare_digest(
+            supplied_bridge_token or "", configured_bridge_token
+        ):
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid bridge credentials",
+                headers={"WWW-Authenticate": "ScholarBridge"},
+            )
         try:
             context = None
-            if any((runtime_type, session_id, entry_id, trace_run_id, tool_call_id)):
+            if has_provenance:
                 context = ToolExecutionContext(
                     runtime_type=runtime_type or "http-bridge",
                     session_id=session_id,

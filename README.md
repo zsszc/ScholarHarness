@@ -68,7 +68,26 @@ confirmation/rejection, and searches the paper collection in hybrid or lexical
 mode. With `OPENAI_MODEL` configured on the API process, its Agent Chat page creates
 an independent MiniPy session and displays live model, tool, and lifecycle events.
 The workbench has no external asset or build dependency and is intended for
-localhost; authentication and public deployment are not part of the current scope.
+localhost; public deployment and multi-user authentication are not part of the
+current scope.
+
+For a hardened local Pi bridge, set the same high-entropy secret in both the API and
+Pi process environments:
+
+```bash
+export SCHOLAR_HARNESS_BRIDGE_TOKEN='replace-with-a-random-secret'
+uv run scholar-harness api
+```
+
+Pi reads this variable automatically and sends it only with runtime-provenance
+headers. When the API has a token configured, missing or invalid credentials are
+rejected before the tool registry runs. Blank or unset values retain zero-config
+localhost development mode. Health checks and provenance-free retrieval remain
+available to the Workbench; the token is never part of model-visible tool schemas.
+
+All repositories share a five-second SQLite busy timeout, foreign-key enforcement,
+WAL journaling, and `synchronous=NORMAL`. This allows Workbench, chat, evaluation,
+and Pi writes to serialize under normal contention while keeping lock waits bounded.
 
 For a full Pi-extension-to-Python bridge check, keep the API running in one terminal
 and run this in another:

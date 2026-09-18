@@ -1,6 +1,6 @@
 # Production boundary hardening
 
-Status: Approved
+Status: Verified
 Date: 2026-09-18
 
 ## Problem
@@ -33,8 +33,8 @@ predictable SQLite contention behavior without making local development difficul
 - **HARDEN-008**: Concurrent writes within the busy-timeout window MUST complete
   without leaking `database is locked`; transactions that fail for other reasons
   MUST retain their existing rollback behavior.
-- **HARDEN-009**: In-memory SQLite databases MUST remain supported without assuming
-  WAL is available.
+- **HARDEN-009**: The shared SQLite connection policy MUST support in-memory
+  databases without assuming WAL is available.
 
 ## Acceptance criteria
 

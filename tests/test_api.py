@@ -239,6 +239,63 @@ def test_http_tool_context_owns_memory_provenance(tmp_path) -> None:
     assert memory.source_tool_call_id == "trusted-call"
 
 
+def test_bridge_token_authenticates_only_provenance_calls(tmp_path) -> None:
+    client = TestClient(
+        create_app(
+            repository=InMemoryPaperRepository(),
+            memory_repository=SQLiteMemoryRepository(tmp_path / "bridge-auth.db"),
+            trace_repository=SQLiteTraceRepository(tmp_path / "bridge-auth.db"),
+            bridge_token="test-bridge-secret",
+        )
+    )
+    provenance = {"X-Scholar-Session-Id": "session-auth"}
+
+    missing = client.post(
+        "/internal/tools/unknown-tool", json={}, headers=provenance
+    )
+    invalid = client.post(
+        "/internal/tools/search_papers",
+        json={"query": "anything"},
+        headers={**provenance, "X-Scholar-Bridge-Token": "wrong"},
+    )
+    valid = client.post(
+        "/internal/tools/search_papers",
+        json={"query": "anything"},
+        headers={
+            **provenance,
+            "X-Scholar-Bridge-Token": "test-bridge-secret",
+        },
+    )
+    provenance_free = client.post(
+        "/internal/tools/search_papers", json={"query": "anything"}
+    )
+
+    assert missing.status_code == invalid.status_code == 401
+    assert missing.json() == invalid.json() == {"detail": "Invalid bridge credentials"}
+    assert valid.status_code == 200
+    assert provenance_free.status_code == 200
+    assert "test-bridge-secret" not in client.get("/openapi.json").text
+
+
+def test_blank_bridge_token_keeps_development_mode(tmp_path) -> None:
+    client = TestClient(
+        create_app(
+            repository=InMemoryPaperRepository(),
+            memory_repository=SQLiteMemoryRepository(tmp_path / "bridge-dev.db"),
+            trace_repository=SQLiteTraceRepository(tmp_path / "bridge-dev.db"),
+            bridge_token="   ",
+        )
+    )
+
+    response = client.post(
+        "/internal/tools/search_papers",
+        json={"query": "anything"},
+        headers={"X-Scholar-Session-Id": "local-dev"},
+    )
+
+    assert response.status_code == 200
+
+
 def test_trace_read_apis(tmp_path) -> None:
     trace_repository = SQLiteTraceRepository(tmp_path / "trace.db")
     run = trace_repository.create_run("fake", external_session_id="session-api")

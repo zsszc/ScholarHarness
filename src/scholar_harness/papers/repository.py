@@ -9,6 +9,7 @@ from typing import Protocol
 
 from scholar_harness.papers.embeddings import EmbeddingProvider, HashingEmbeddingProvider
 from scholar_harness.papers.models import Paper, PaperSummary, Passage
+from scholar_harness.storage.sqlite import configure_sqlite_database, connect_sqlite
 
 _TOKEN_PATTERN = re.compile(r"[\w\u4e00-\u9fff]+", re.UNICODE)
 _MIN_VECTOR_SIMILARITY = 0.05
@@ -124,13 +125,11 @@ class SQLitePaperRepository(PassageResultMixin):
         self._initialize()
 
     def connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.database)
-        connection.row_factory = sqlite3.Row
-        connection.execute("PRAGMA foreign_keys = ON")
-        return connection
+        return connect_sqlite(self.database)
 
     def _initialize(self) -> None:
         with self.connect() as connection:
+            configure_sqlite_database(connection, self.database)
             connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS papers (
