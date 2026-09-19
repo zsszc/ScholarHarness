@@ -48,6 +48,7 @@ from scholar_harness.papers.models import Paper, PaperSummary
 from scholar_harness.papers.pdf import PdfIngestor
 from scholar_harness.papers.repository import PaperRepository, SQLitePaperRepository
 from scholar_harness.papers.tools import build_paper_tools
+from scholar_harness.sessions.turn_graph import project_turn_graph
 from scholar_harness.tools.context import ToolExecutionContext
 from scholar_harness.traces.models import AgentRun, ToolExecution, TraceEvent
 from scholar_harness.traces.repository import SQLiteTraceRepository
@@ -152,6 +153,12 @@ def create_app(
         session = await _get_chat_session(chats, session_id)
         entries = await session.entries()
         return [entry.model_dump(mode="json") for entry in entries]
+
+    @app.get("/chat/sessions/{session_id}/graph")
+    async def get_chat_graph(session_id: str) -> dict[str, Any]:
+        session = await _get_chat_session(chats, session_id)
+        info = await session.info()
+        return project_turn_graph(await session.entries(), info.active_leaf_id)
 
     @app.delete("/chat/sessions/{session_id}", status_code=204)
     async def delete_chat_session(session_id: str) -> Response:

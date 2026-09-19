@@ -99,6 +99,11 @@ OpenAI-compatible provider such as DeepSeek, copy `.env.example` to the ignored
 uv run --env-file .env scholar-harness api
 ```
 
+The browser chat now includes a branch-aware MiniPy conversation graph. Selecting
+a historical turn previews only its ancestral path; explicit continue/retry
+actions choose the context for the next turn without deleting old branches. This
+is not a Pi-native session UI or PiX-style parallel branch runtime yet.
+
 For a hardened local Pi bridge, set the same high-entropy secret in both the API and
 Pi process environments:
 

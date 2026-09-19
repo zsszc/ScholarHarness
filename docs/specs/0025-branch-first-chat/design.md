@@ -12,17 +12,20 @@ provider configuration is not read or returned.
 
 ## UI
 
-The graph appears before the composer. Nodes are laid out by depth and sibling
-index using CSS, with explicit parent connectors and accessible buttons; this
+The graph appears before the composer. Nodes are laid out by depth and turn order
+with SVG parent connectors and accessible native buttons; this
 bounded first milestone does not claim PiX's infinite canvas or parallel runtimes.
 Clicking a node only changes the selected view. "Continue" calls the existing
 fork command with the node's continuation anchor, whereas "Retry" forks at the
 user entry. Both operations are explicit and server-authoritative. Browser chat
 refreshes from the graph after reconnect, commands, and completed turns.
+When retrying a user entry, its previous answer remains visible in a separate
+"preserved old answer" inspector, explicitly excluded from the active context.
+The browser prevents sending into a selected historical path until the user
+explicitly activates its continuation or retry anchor.
 
 ## Limits
 
 This is a durable MiniPy interaction milestone. Pi RPC remains separately usable,
 but this page does not claim to host Pi sessions. Concurrent independent branch
 runtimes and side-by-side panes are future milestones.
-

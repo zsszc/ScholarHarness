@@ -1,6 +1,6 @@
 # Branch-first research chat
 
-Status: Approved
+Status: Verified
 Date: 2026-09-19
 
 ## Problem
@@ -38,4 +38,3 @@ interaction is a graph whose selected path determines the conversation.
 - **AC-GRAPH-003**: Browser QA proves selecting and switching branches changes the
   transcript, and explicit fork/continuation changes the active leaf. (GRAPH-003..007)
 - **AC-GRAPH-004**: Full repository quality gates and Pi bridge smoke pass.
-

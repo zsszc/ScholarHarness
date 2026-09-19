@@ -16,6 +16,7 @@ from scholar_harness.chat_sessions import (
     ChatSessionRestoreError,
     create_default_chat_manager,
 )
+from scholar_harness.core.events import AgentEvent
 from scholar_harness.papers.repository import InMemoryPaperRepository
 from scholar_harness.runtimes.model import (
     ModelMessage,
@@ -117,6 +118,53 @@ async def test_manager_lifecycle_and_metadata_are_secret_free(tmp_path) -> None:
     assert first.closed == 1
     await sessions.close_all()
     assert second.closed == 1
+
+
+def test_chat_graph_endpoint_projects_forks_without_provider_configuration(tmp_path) -> None:
+    database = tmp_path / "graph-api.db"
+    store = SQLiteChatSessionRepository(database)
+    entries = [
+        AgentEvent(
+            type="message",
+            session_id="graph-api",
+            entry_id=entry_id,
+            parent_id=parent_id,
+            data={"role": role, "content": content},
+        )
+        for entry_id, parent_id, role, content in (
+            ("u1", None, "user", "Compare papers"),
+            ("a1", "u1", "assistant", "Original"),
+            ("u2", "a1", "user", "Continue"),
+            ("a2", "u2", "assistant", "More detail"),
+            ("u3", "u1", "user", "Alternative"),
+            ("a3", "u3", "assistant", "Another route"),
+        )
+    ]
+    store.save(
+        ChatSessionSnapshot(
+            id="graph-api",
+            created_at=datetime.now(UTC),
+            active_leaf_id="a3",
+            entries=entries,
+        )
+    )
+    sessions = ChatSessionManager(
+        tools=echo_tools(),
+        traces=SQLiteTraceRepository(database),
+        adapter_factory=lambda: ScriptedAdapter([]),
+        session_repository=store,
+    )
+    with TestClient(create_app(chat_session_manager=sessions)) as client:
+        response = client.get("/chat/sessions/graph-api/graph")
+        assert response.status_code == 200
+        nodes = response.json()["nodes"]
+        assert [node["parent_id"] for node in nodes] == [None, "u1", "u1"]
+        assert [message["content"] for message in nodes[-1]["messages"]] == [
+            "Compare papers", "Alternative", "Another route"
+        ]
+        assert "api_key" not in response.text
+        assert "base_url" not in response.text
+        assert store.get("graph-api").active_leaf_id == "a3"
 
 
 async def test_missing_server_configuration_is_explicit(tmp_path) -> None:
