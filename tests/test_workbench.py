@@ -95,13 +95,32 @@ def test_branch_graph_selects_without_mutation_and_forks_explicitly() -> None:
     assert "MiniPy · 非 Pi 原生会话" in WORKBENCH_HTML
     assert "/chat/sessions/${encodeURIComponent(sessionId)}/graph" in WORKBENCH_HTML
     assert (
-        'button.addEventListener("click",()=>{state.selectedTurnId=node.id;renderTurnGraph()})'
+        'if(button.dataset.ignoreClick){delete button.dataset.ignoreClick;return}'
         in WORKBENCH_HTML
     )
+    assert 'state.selectedTurnId=node.id;renderTurnGraph()' in WORKBENCH_HTML
     assert 'sendChatCommand({type:"fork",entry_id:anchor})' in WORKBENCH_HTML
     assert 'anchor=retry?node.id:node.continue_entry_id' in WORKBENCH_HTML
     assert "selected.messages.forEach" in WORKBENCH_HTML
     assert 'make("pre","",tool.content)' in WORKBENCH_HTML
+
+
+def test_graph_canvas_has_drag_zoom_pan_and_session_local_layout() -> None:
+    for text in (
+        'dragGraphNode(button,node,index,byNodeId,redrawEdges)',
+        'button.setPointerCapture(event.pointerId)',
+        'scroll.setPointerCapture(event.pointerId)',
+        'redrawEdges()',
+        'zoomGraph(Math.exp(-event.deltaY*.001),event.clientX,event.clientY)',
+        'Math.max(.4,Math.min(2.5,view.scale*factor))',
+        'fitButton.addEventListener("click",fitGraph)',
+        'resetButton.addEventListener("click",resetGraphLayout)',
+        'localStorage.setItem(graphStorageKey(view.sessionId)',
+        'if(state.graphView.sessionId!==sessionId)restoreGraphView(sessionId)',
+        '"适配视图"',
+        '"重置布局"',
+    ):
+        assert text in WORKBENCH_HTML
 
 
 def test_workbench_evaluation_lab_uses_public_contracts_and_safe_evidence() -> None:
