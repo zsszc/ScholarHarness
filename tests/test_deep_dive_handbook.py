@@ -9,6 +9,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCUMENT = ROOT / "docs" / "scholar-harness-deep-dive.html"
+RESUME_DESCRIPTION = ROOT / "docs" / "resume-project-description.zh-CN.md"
 
 
 class HandbookParser(HTMLParser):
@@ -58,7 +59,7 @@ def test_deep_dive_handbook_is_offline_and_source_linked() -> None:
     assert "<html lang=\"zh-CN\">" in html
     assert "</html>" in html
     assert parser.question_count >= 80
-    assert parser.diagram_count >= 6
+    assert parser.diagram_count >= 7
     assert len(parser.ids) == len(set(parser.ids))
     assert not parser.open_tags
     assert not parser.tag_errors
@@ -93,8 +94,24 @@ def test_deep_dive_handbook_has_required_explanations() -> None:
         "LLM-as-a-judge",
         "Transformer",
         "模型位置",
+        "Recall@5 从 50% 提升至 95%",
+        "Hybrid 相比 Vector-only",
+        "RRF 单独带来 45pp",
+        "retrieval-evaluation.json",
+        "resume-project-description.zh-CN.md",
     ):
         assert text in html
+
+
+def test_resume_description_is_pi_led_and_evidence_bounded() -> None:
+    content = RESUME_DESCRIPTION.read_text(encoding="utf-8")
+
+    assert "基于 Pi 的个人文献知识库与研究 Agent Harness" in content
+    assert "Python Reference Runtime" in content
+    assert "Recall@5 从 50% 提升至 95%" in content
+    assert "20 条标注查询的受控离线" in content
+    assert "不是公开论文检索基准" in content
+    assert "RRF 单独带来 45pp" in content
 
 
 def test_deep_dive_handbook_interactions_without_browser() -> None:

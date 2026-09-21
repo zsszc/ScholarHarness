@@ -91,19 +91,21 @@ Case，`eval-gate` 输出 JSON/JUnit 并以退出码阻断 CI。Pi/MiniPy parity
 
 ## 简历表述
 
-中文版本：
+中文版已改为以 Pi 与文献 Agent 价值为主线，MiniPy 定位为 Python
+Reference Runtime。完整版和一页精简版见
+[简历项目描述](resume-project-description.zh-CN.md)。
 
-- 独立设计并实现 Python 研究 Agent Harness，以统一 runtime contract 接入 Pi RPC
-  与自研 MiniPy tool loop，支持分支、压缩、中止、会话恢复与行为 parity 验证。
-- 构建 evidence-backed Memory 生命周期和文献 RAG：FTS5/离线向量混合检索、精确
-  引用校验、可信 provenance、人工确认及可审计 supersession。
-- 构建 20 条标注查询的受控离线检索回归集，对 BM25、Hashing Vector 和
-  RRF Hybrid 做消融；Hybrid 相比 BM25 将 Recall@5 从 50% 提升至 95%
+- 基于 Pi 构建本地优先的文献研究 Agent Harness，通过 JSONL RPC 与 TypeScript
+  Bridge 将会话事件和 Tool Calling 接入 Python ToolRegistry，并将文献、Memory、
+  Trace 和 Evaluation 作为可独立测试的领域能力。
+- 实现 PDF 分块、FTS5/BM25、Hashing Vector 和 RRF 混合检索；在 20 条
+  标注查询的受控离线消融中，将 Recall@5 从 50% 提升至 95%
   （+45.0pp），MRR@5 从 50% 提升至 79.3%（+29.3pp）。
-- 建立 runtime-neutral Trace/Evaluation/CI 体系，支持工具、终态、引用与 Memory
-  context 回归检查，输出 JSON/JUnit；累计 171 项自动化测试通过。
-- 加固本地生产边界：Pi bridge 共享密钥认证、Trace 脱敏、SQLite WAL/事务/锁等待、
-  持久化浏览器会话和故障隔离。
+- 设计 candidate→confirmed 可信 Memory 链路、脱敏 Trace 和确定性
+  Evaluation/CI Gate，支持引用校验、可信 provenance、回归比较与 JSON/JUnit
+  报告，当前 172 项自动化测试通过。
+- 自研透明 Python Reference Runtime，显式实现 Model–Tool Loop、Abort、Fork、
+  Compaction 和会话恢复，用于 Agent 原理学习、离线测试和 Pi 公共行为验证。
 
 English version:
 
@@ -117,7 +119,7 @@ English version:
   retrieval improved Recall@5 from 50% to 95% (+45.0pp) and MRR@5 from 50% to
   79.3% (+29.3pp) over the BM25 baseline on this regression fixture.
 - Built trace-driven evaluations and CI gates for tool use, terminal status,
-  citations, and memory context, with versioned JSON/JUnit evidence and 171
+  citations, and memory context, with versioned JSON/JUnit evidence and 172
   passing automated tests.
 - Hardened local operations with authenticated Pi provenance, recursive trace
   redaction, SQLite WAL/transactions/contention handling, and failure isolation.

@@ -8,6 +8,7 @@ be swapped between Pi and a small educational Python runtime.
 
 **Portfolio status: complete local-first reference implementation.** For a fast
 review, start with the [three-minute portfolio guide](docs/portfolio.md),
+[Chinese resume-ready project description](docs/resume-project-description.zh-CN.md),
 [architecture](docs/architecture.md), and reproducible
 [offline benchmark](docs/benchmark.md). The labelled
 [retrieval ablation](docs/retrieval-evaluation.md) compares BM25, hashing vectors,
