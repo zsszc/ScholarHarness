@@ -29,6 +29,10 @@ from scholar_harness.evaluations.service import EvaluationConflictError, TraceEv
 from scholar_harness.evaluations.suites import EvaluationSuiteRunner
 from scholar_harness.memory.context import MemoryContextPolicy
 from scholar_harness.memory.repository import SQLiteMemoryRepository
+from scholar_harness.retrieval_evaluation import (
+    load_retrieval_dataset,
+    run_retrieval_evaluation,
+)
 from scholar_harness.runtimes.base import AgentRuntime
 from scholar_harness.runtimes.mini_py import MiniPyRuntime
 from scholar_harness.runtimes.model import ModelAdapter
@@ -158,6 +162,13 @@ def build_parser() -> argparse.ArgumentParser:
     benchmark.add_argument("--trace-events", type=_positive_int, default=1_000)
     benchmark.add_argument("--database", type=Path)
     benchmark.add_argument("--json-output", type=Path)
+
+    retrieval_eval = commands.add_parser(
+        "retrieval-eval", help="Run labelled lexical/vector/hybrid retrieval ablation"
+    )
+    retrieval_eval.add_argument("--dataset", type=Path, required=True)
+    retrieval_eval.add_argument("--k", type=_positive_int, default=5)
+    retrieval_eval.add_argument("--json-output", type=Path)
     return parser
 
 
@@ -374,6 +385,15 @@ def main() -> None:
             trace_events=args.trace_events,
             database=args.database,
         )
+        output = report.model_dump_json(indent=2) + "\n"
+        if args.json_output is not None:
+            write_text_atomic(args.json_output, output)
+        print(output, end="")
+        return
+
+    if args.command == "retrieval-eval":
+        dataset = load_retrieval_dataset(args.dataset)
+        report = run_retrieval_evaluation(dataset, k=args.k)
         output = report.model_dump_json(indent=2) + "\n"
         if args.json_output is not None:
             write_text_atomic(args.json_output, output)

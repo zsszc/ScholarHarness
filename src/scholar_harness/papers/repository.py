@@ -5,7 +5,7 @@ import sqlite3
 import struct
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Protocol
+from typing import Literal, Protocol
 
 from scholar_harness.papers.embeddings import EmbeddingProvider, HashingEmbeddingProvider
 from scholar_harness.papers.models import Paper, PaperSummary, Passage
@@ -358,6 +358,34 @@ class SQLitePaperRepository(PassageResultMixin):
             )
         )
         return hits[:limit]
+
+    def component_search(
+        self,
+        query: str,
+        limit: int = 5,
+        component: Literal["lexical", "vector"] = "lexical",
+    ) -> list[Mapping[str, object]]:
+        """Return one inspectable retrieval component for offline evaluation."""
+        if limit < 1:
+            raise ValueError("Search limit must be at least 1")
+        if component not in {"lexical", "vector"}:
+            raise ValueError(f"Unknown retrieval component: {component}")
+        hits = (
+            self._lexical_search(query, limit)
+            if component == "lexical"
+            else self._vector_search(query, limit)
+        )
+        rank_name = "lexical_rank" if component == "lexical" else "vector_rank"
+        other_rank = "vector_rank" if component == "lexical" else "lexical_rank"
+        return [
+            {
+                **hit,
+                "retrieval_mode": component,
+                rank_name: rank,
+                other_rank: None,
+            }
+            for rank, hit in enumerate(hits, start=1)
+        ]
 
     def search(
         self, query: str, limit: int = 5, mode: str = "hybrid"

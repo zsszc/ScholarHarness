@@ -18,6 +18,8 @@ uv run scholar-harness pi-smoke
 uv run scholar-harness benchmark \
   --papers 100 --passages-per-paper 4 \
   --queries 100 --trace-events 1000
+uv run scholar-harness retrieval-eval \
+  --dataset benchmarks/retrieval-ablation-v1.json --k 5
 uv run pytest
 ```
 
@@ -79,7 +81,7 @@ Case，`eval-gate` 输出 JSON/JUnit 并以退出码阻断 CI。Pi/MiniPy parity
 | --- | --- | --- |
 | 双 runtime | `runtimes/pi_rpc.py`, `runtimes/mini_py.py` | `pi-smoke`, runtime tests |
 | Tool calling | `tools/registry.py`, Pi extension | tool and MiniPy tests |
-| 文献检索 | paper repository, embeddings, citation tool | offline benchmark |
+| 文献检索 | paper repository, embeddings, citation tool | throughput benchmark + labelled ablation |
 | Memory trust | memory repository/context/tools | memory and context tests |
 | 可观测性 | trace repository/runtime, Workbench | run APIs and trace tests |
 | Evaluation | case/suite/service/reports | `eval-gate`, JSON/JUnit tests |
@@ -95,8 +97,11 @@ Case，`eval-gate` 输出 JSON/JUnit 并以退出码阻断 CI。Pi/MiniPy parity
   与自研 MiniPy tool loop，支持分支、压缩、中止、会话恢复与行为 parity 验证。
 - 构建 evidence-backed Memory 生命周期和文献 RAG：FTS5/离线向量混合检索、精确
   引用校验、可信 provenance、人工确认及可审计 supersession。
+- 构建 20 条标注查询的受控离线检索回归集，对 BM25、Hashing Vector 和
+  RRF Hybrid 做消融；Hybrid 相比 BM25 将 Recall@5 从 50% 提升至 95%
+  （+45.0pp），MRR@5 从 50% 提升至 79.3%（+29.3pp）。
 - 建立 runtime-neutral Trace/Evaluation/CI 体系，支持工具、终态、引用与 Memory
-  context 回归检查，输出 JSON/JUnit；累计 150+ 自动化测试。
+  context 回归检查，输出 JSON/JUnit；累计 171 项自动化测试通过。
 - 加固本地生产边界：Pi bridge 共享密钥认证、Trace 脱敏、SQLite WAL/事务/锁等待、
   持久化浏览器会话和故障隔离。
 
@@ -108,9 +113,12 @@ English version:
 - Implemented evidence-backed memory and literature retrieval with FTS5/vector RRF,
   exact citation validation, runtime-owned provenance, human confirmation, and
   auditable supersession.
+- Built a 20-query controlled offline relevance set and ablation harness; hybrid
+  retrieval improved Recall@5 from 50% to 95% (+45.0pp) and MRR@5 from 50% to
+  79.3% (+29.3pp) over the BM25 baseline on this regression fixture.
 - Built trace-driven evaluations and CI gates for tool use, terminal status,
-  citations, and memory context, with versioned JSON/JUnit evidence and 150+
-  automated tests.
+  citations, and memory context, with versioned JSON/JUnit evidence and 171
+  passing automated tests.
 - Hardened local operations with authenticated Pi provenance, recursive trace
   redaction, SQLite WAL/transactions/contention handling, and failure isolation.
 
@@ -131,6 +139,7 @@ English version:
 
 - [Architecture](architecture.md)
 - [Benchmark](benchmark.md)
+- [Retrieval ablation](retrieval-evaluation.md)
 - [CI workflow](ci.md)
 - [Changelog](../CHANGELOG.md)
 - [Release checklist](release.md)

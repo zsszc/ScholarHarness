@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "name": "scholar-harness-controlled-retrieval-v1",
+  "description": "Controlled offline Agent-engineering corpus with exact-token and related-word-form queries; it is a regression fixture, not a public scientific IR benchmark.",
+  "papers": [
+    {
+      "id": "memory",
+      "title": "Persistent Agent State",
+      "passages": [{"id": "p1", "page": 1, "text": "Long-term memory requires evidence provenance, explicit confirmation, and bounded context injection."}]
+    },
+    {
+      "id": "retrieval",
+      "title": "Hybrid Search Ranking",
+      "passages": [{"id": "p1", "page": 2, "text": "Lexical retrieval and vector retrieval can be combined with reciprocal rank fusion without mixing raw score scales."}]
+    },
+    {
+      "id": "branch",
+      "title": "Conversation Branch Semantics",
+      "passages": [{"id": "p1", "page": 3, "text": "A session uses an append only tree where the active leaf selects the current conversational path."}]
+    },
+    {
+      "id": "sqlite",
+      "title": "Local Persistence",
+      "passages": [{"id": "p1", "page": 4, "text": "SQLite write ahead logging and an immediate transaction provide atomic checkpoint replacement under local contention."}]
+    },
+    {
+      "id": "tools",
+      "title": "Controlled Function Execution",
+      "passages": [{"id": "p1", "page": 5, "text": "A structured tool call is only an execution request; the runtime performs schema validation and trusted context injection."}]
+    },
+    {
+      "id": "citation",
+      "title": "Evidence Coordinates",
+      "passages": [{"id": "p1", "page": 6, "text": "Citation validation resolves a paper and passage coordinate before checking that the quoted text occurs in the source."}]
+    },
+    {
+      "id": "compaction",
+      "title": "Bounded Conversation Context",
+      "passages": [{"id": "p1", "page": 7, "text": "Context compaction inserts a summary boundary so older turns need not be replayed into every model request."}]
+    },
+    {
+      "id": "trace",
+      "title": "Runtime Observability",
+      "passages": [{"id": "p1", "page": 8, "text": "Each runtime event enters a trace with sequence, terminal status, tool execution evidence, and timing metadata."}]
+    },
+    {
+      "id": "evaluation",
+      "title": "Retrieval Quality Measurement",
+      "passages": [{"id": "p1", "page": 9, "text": "Retrieval evaluation reports recall, mean reciprocal rank, and normalized discounted cumulative gain over labelled queries."}]
+    },
+    {
+      "id": "security",
+      "title": "Untrusted Document Content",
+      "passages": [{"id": "p1", "page": 10, "text": "Prompt injection inside retrieved data must not gain tool authority or override trusted system instructions."}]
+    },
+    {
+      "id": "abort",
+      "title": "Cooperative Task Control",
+      "passages": [{"id": "p1", "page": 11, "text": "Cancellation races an abort signal against model or tool work and cannot reverse side effects that already completed."}]
+    },
+    {
+      "id": "redaction",
+      "title": "Sensitive Trace Storage",
+      "passages": [{"id": "p1", "page": 12, "text": "Recursive redaction masks secret-like fields before a trace payload is persisted and limits oversized diagnostic data."}]
+    },
+    {
+      "id": "cache-distractor",
+      "title": "Application Caching",
+      "passages": [{"id": "p1", "page": 13, "text": "A cache stores repeated computation results and uses expiration plus eviction to bound stale application state."}]
+    },
+    {
+      "id": "network-distractor",
+      "title": "Network Flow Control",
+      "passages": [{"id": "p1", "page": 14, "text": "Backpressure limits producer throughput when consumers cannot process messages at the incoming rate."}]
+    },
+    {
+      "id": "classification-distractor",
+      "title": "Text Classification",
+      "passages": [{"id": "p1", "page": 15, "text": "A classifier assigns labels from supervised examples and is measured with precision, recall, and calibration."}]
+    }
+  ],
+  "cases": [
+    {"id": "exact-memory", "query": "evidence provenance", "category": "exact-token", "relevant": [{"paper_id": "memory", "passage_id": "p1"}]},
+    {"id": "exact-retrieval", "query": "reciprocal rank fusion", "category": "exact-token", "relevant": [{"paper_id": "retrieval", "passage_id": "p1"}]},
+    {"id": "exact-branch", "query": "append only tree active leaf", "category": "exact-token", "relevant": [{"paper_id": "branch", "passage_id": "p1"}]},
+    {"id": "exact-sqlite", "query": "write ahead logging transaction", "category": "exact-token", "relevant": [{"paper_id": "sqlite", "passage_id": "p1"}]},
+    {"id": "exact-tools", "query": "structured tool call validation", "category": "exact-token", "relevant": [{"paper_id": "tools", "passage_id": "p1"}]},
+    {"id": "exact-citation", "query": "citation passage coordinate", "category": "exact-token", "relevant": [{"paper_id": "citation", "passage_id": "p1"}]},
+    {"id": "exact-compaction", "query": "context compaction summary", "category": "exact-token", "relevant": [{"paper_id": "compaction", "passage_id": "p1"}]},
+    {"id": "exact-trace", "query": "runtime event trace terminal", "category": "exact-token", "relevant": [{"paper_id": "trace", "passage_id": "p1"}]},
+    {"id": "exact-evaluation", "query": "reciprocal rank normalized discounted", "category": "exact-token", "relevant": [{"paper_id": "evaluation", "passage_id": "p1"}]},
+    {"id": "exact-security", "query": "prompt injection untrusted", "category": "exact-token", "relevant": [{"paper_id": "security", "passage_id": "p1"}]},
+    {"id": "related-memory", "query": "memorization", "category": "related-word-form", "relevant": [{"paper_id": "memory", "passage_id": "p1"}]},
+    {"id": "related-retrieval", "query": "retrieving", "category": "related-word-form", "relevant": [{"paper_id": "retrieval", "passage_id": "p1"}]},
+    {"id": "related-branch", "query": "branching", "category": "related-word-form", "relevant": [{"paper_id": "branch", "passage_id": "p1"}]},
+    {"id": "related-sqlite", "query": "transactional", "category": "related-word-form", "relevant": [{"paper_id": "sqlite", "passage_id": "p1"}]},
+    {"id": "related-tools", "query": "validating", "category": "related-word-form", "relevant": [{"paper_id": "tools", "passage_id": "p1"}]},
+    {"id": "related-citation", "query": "citations", "category": "related-word-form", "relevant": [{"paper_id": "citation", "passage_id": "p1"}]},
+    {"id": "related-compaction", "query": "compacted", "category": "related-word-form", "relevant": [{"paper_id": "compaction", "passage_id": "p1"}]},
+    {"id": "related-trace", "query": "observable", "category": "related-word-form", "relevant": [{"paper_id": "trace", "passage_id": "p1"}]},
+    {"id": "related-security", "query": "injecting", "category": "related-word-form", "relevant": [{"paper_id": "security", "passage_id": "p1"}]},
+    {"id": "related-abort", "query": "cancelling", "category": "related-word-form", "relevant": [{"paper_id": "abort", "passage_id": "p1"}]}
+  ]
+}

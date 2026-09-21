@@ -9,7 +9,9 @@ be swapped between Pi and a small educational Python runtime.
 **Portfolio status: complete local-first reference implementation.** For a fast
 review, start with the [three-minute portfolio guide](docs/portfolio.md),
 [architecture](docs/architecture.md), and reproducible
-[offline benchmark](docs/benchmark.md). Every non-trivial milestone has requirement
+[offline benchmark](docs/benchmark.md). The labelled
+[retrieval ablation](docs/retrieval-evaluation.md) compares BM25, hashing vectors,
+and RRF hybrid rankings. Every non-trivial milestone has requirement
 ids and verification evidence under [`docs/specs`](docs/specs).
 The standalone Chinese [deep-dive and interview handbook](docs/scholar-harness-deep-dive.html)
 opens locally as one HTML file, with embedded diagrams and an 80-question study bank.
@@ -42,6 +44,8 @@ Fast evaluator path—no model credentials required:
 uv sync --extra dev
 uv run scholar-harness pi-smoke
 uv run scholar-harness benchmark --papers 100 --queries 100 --trace-events 1000
+uv run scholar-harness retrieval-eval \
+  --dataset benchmarks/retrieval-ablation-v1.json --k 5
 uv run pytest
 ```
 

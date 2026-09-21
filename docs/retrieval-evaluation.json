@@ -1,0 +1,2259 @@
+{
+  "schema_version": 1,
+  "dataset_name": "scholar-harness-controlled-retrieval-v1",
+  "dataset_sha256": "156b5c4af956c928fcdc2cd4170e3a988004ee0bea85952d58b7b9f9cb0208f2",
+  "dataset_description": "Controlled offline Agent-engineering corpus with exact-token and related-word-form queries; it is a regression fixture, not a public scientific IR benchmark.",
+  "cutoff_k": 5,
+  "query_count": 20,
+  "passage_count": 15,
+  "environment": {
+    "python": "3.12.2",
+    "sqlite": "3.45.2",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit",
+    "git_commit": "c3c622c"
+  },
+  "modes": {
+    "lexical": {
+      "mode": "lexical",
+      "recall_at_k": 0.5,
+      "mrr_at_k": 0.5,
+      "ndcg_at_k": 0.5,
+      "latency_ms_p50": 0.254625,
+      "latency_ms_p95": 0.761792,
+      "categories": {
+        "exact-token": {
+          "case_count": 10,
+          "recall_at_k": 1.0,
+          "mrr_at_k": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        "related-word-form": {
+          "case_count": 10,
+          "recall_at_k": 0.0,
+          "mrr_at_k": 0.0,
+          "ndcg_at_k": 0.0
+        }
+      },
+      "cases": [
+        {
+          "case_id": "exact-memory",
+          "query": "evidence provenance",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "memory",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 3
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.761792
+        },
+        {
+          "case_id": "exact-retrieval",
+          "query": "reciprocal rank fusion",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 2
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.419375
+        },
+        {
+          "case_id": "exact-branch",
+          "query": "append only tree active leaf",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "branch",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "branch",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 2
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.348792
+        },
+        {
+          "case_id": "exact-sqlite",
+          "query": "write ahead logging transaction",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1",
+              "rank": 1
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.312584
+        },
+        {
+          "case_id": "exact-tools",
+          "query": "structured tool call validation",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "tools",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.327875
+        },
+        {
+          "case_id": "exact-citation",
+          "query": "citation passage coordinate",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "citation",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 1
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.278958
+        },
+        {
+          "case_id": "exact-compaction",
+          "query": "context compaction summary",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 3
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.275708
+        },
+        {
+          "case_id": "exact-trace",
+          "query": "runtime event trace terminal",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "trace",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "redaction",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 3
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.299334
+        },
+        {
+          "case_id": "exact-evaluation",
+          "query": "reciprocal rank normalized discounted",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 2
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.975375
+        },
+        {
+          "case_id": "exact-security",
+          "query": "prompt injection untrusted",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 3
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.254625
+        },
+        {
+          "case_id": "related-memory",
+          "query": "memorization",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "memory",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.158042
+        },
+        {
+          "case_id": "related-retrieval",
+          "query": "retrieving",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.15525
+        },
+        {
+          "case_id": "related-branch",
+          "query": "branching",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "branch",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.152583
+        },
+        {
+          "case_id": "related-sqlite",
+          "query": "transactional",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.209958
+        },
+        {
+          "case_id": "related-tools",
+          "query": "validating",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "tools",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.231
+        },
+        {
+          "case_id": "related-citation",
+          "query": "citations",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "citation",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.198458
+        },
+        {
+          "case_id": "related-compaction",
+          "query": "compacted",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.204875
+        },
+        {
+          "case_id": "related-trace",
+          "query": "observable",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "trace",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.285834
+        },
+        {
+          "case_id": "related-security",
+          "query": "injecting",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.178083
+        },
+        {
+          "case_id": "related-abort",
+          "query": "cancelling",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "abort",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.179459
+        }
+      ]
+    },
+    "vector": {
+      "mode": "vector",
+      "recall_at_k": 0.95,
+      "mrr_at_k": 0.793333,
+      "ndcg_at_k": 0.832436,
+      "latency_ms_p50": 0.481333,
+      "latency_ms_p95": 0.751375,
+      "categories": {
+        "exact-token": {
+          "case_count": 10,
+          "recall_at_k": 1.0,
+          "mrr_at_k": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        "related-word-form": {
+          "case_count": 10,
+          "recall_at_k": 0.9,
+          "mrr_at_k": 0.586667,
+          "ndcg_at_k": 0.664871
+        }
+      },
+      "cases": [
+        {
+          "case_id": "exact-memory",
+          "query": "evidence provenance",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "memory",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1",
+              "rank": 4
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.7285
+        },
+        {
+          "case_id": "exact-retrieval",
+          "query": "reciprocal rank fusion",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.560792
+        },
+        {
+          "case_id": "exact-branch",
+          "query": "append only tree active leaf",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "branch",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "branch",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "network-distractor",
+              "passage_id": "p1",
+              "rank": 3
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.489833
+        },
+        {
+          "case_id": "exact-sqlite",
+          "query": "write ahead logging transaction",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.494958
+        },
+        {
+          "case_id": "exact-tools",
+          "query": "structured tool call validation",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "tools",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "classification-distractor",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.495584
+        },
+        {
+          "case_id": "exact-citation",
+          "query": "citation passage coordinate",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "citation",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "branch",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "classification-distractor",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.482666
+        },
+        {
+          "case_id": "exact-compaction",
+          "query": "context compaction summary",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "branch",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.481084
+        },
+        {
+          "case_id": "exact-trace",
+          "query": "runtime event trace terminal",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "trace",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "redaction",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1",
+              "rank": 4
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.47125
+        },
+        {
+          "case_id": "exact-evaluation",
+          "query": "reciprocal rank normalized discounted",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "classification-distractor",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "redaction",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.50175
+        },
+        {
+          "case_id": "exact-security",
+          "query": "prompt injection untrusted",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.481333
+        },
+        {
+          "case_id": "related-memory",
+          "query": "memorization",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "memory",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "classification-distractor",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 0.5,
+            "ndcg_at_k": 0.63093
+          },
+          "latency_ms": 1.040791
+        },
+        {
+          "case_id": "related-retrieval",
+          "query": "retrieving",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "network-distractor",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.417625
+        },
+        {
+          "case_id": "related-branch",
+          "query": "branching",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "branch",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "branch",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1",
+              "rank": 3
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.403708
+        },
+        {
+          "case_id": "related-sqlite",
+          "query": "transactional",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "redaction",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.471375
+        },
+        {
+          "case_id": "related-tools",
+          "query": "validating",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "tools",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "network-distractor",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 0.2,
+            "ndcg_at_k": 0.386853
+          },
+          "latency_ms": 0.751375
+        },
+        {
+          "case_id": "related-citation",
+          "query": "citations",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "citation",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "branch",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "classification-distractor",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 0.5,
+            "ndcg_at_k": 0.63093
+          },
+          "latency_ms": 0.533458
+        },
+        {
+          "case_id": "related-compaction",
+          "query": "compacted",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 0.333333,
+            "ndcg_at_k": 0.5
+          },
+          "latency_ms": 0.425875
+        },
+        {
+          "case_id": "related-trace",
+          "query": "observable",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "trace",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "redaction",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.419
+        },
+        {
+          "case_id": "related-security",
+          "query": "injecting",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 1
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.409375
+        },
+        {
+          "case_id": "related-abort",
+          "query": "cancelling",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "abort",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 0.333333,
+            "ndcg_at_k": 0.5
+          },
+          "latency_ms": 0.41525
+        }
+      ]
+    },
+    "hybrid": {
+      "mode": "hybrid",
+      "recall_at_k": 0.95,
+      "mrr_at_k": 0.793333,
+      "ndcg_at_k": 0.832436,
+      "latency_ms_p50": 0.693458,
+      "latency_ms_p95": 0.966833,
+      "categories": {
+        "exact-token": {
+          "case_count": 10,
+          "recall_at_k": 1.0,
+          "mrr_at_k": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        "related-word-form": {
+          "case_count": 10,
+          "recall_at_k": 0.9,
+          "mrr_at_k": 0.586667,
+          "ndcg_at_k": 0.664871
+        }
+      },
+      "cases": [
+        {
+          "case_id": "exact-memory",
+          "query": "evidence provenance",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "memory",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1",
+              "rank": 4
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.743958
+        },
+        {
+          "case_id": "exact-retrieval",
+          "query": "reciprocal rank fusion",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.693458
+        },
+        {
+          "case_id": "exact-branch",
+          "query": "append only tree active leaf",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "branch",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "branch",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "network-distractor",
+              "passage_id": "p1",
+              "rank": 4
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.721458
+        },
+        {
+          "case_id": "exact-sqlite",
+          "query": "write ahead logging transaction",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.763333
+        },
+        {
+          "case_id": "exact-tools",
+          "query": "structured tool call validation",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "tools",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.790125
+        },
+        {
+          "case_id": "exact-citation",
+          "query": "citation passage coordinate",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "citation",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "branch",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "classification-distractor",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.757416
+        },
+        {
+          "case_id": "exact-compaction",
+          "query": "context compaction summary",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "branch",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.966833
+        },
+        {
+          "case_id": "exact-trace",
+          "query": "runtime event trace terminal",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "trace",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "redaction",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1",
+              "rank": 4
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.977917
+        },
+        {
+          "case_id": "exact-evaluation",
+          "query": "reciprocal rank normalized discounted",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "classification-distractor",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "redaction",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.750167
+        },
+        {
+          "case_id": "exact-security",
+          "query": "prompt injection untrusted",
+          "category": "exact-token",
+          "relevant": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.678209
+        },
+        {
+          "case_id": "related-memory",
+          "query": "memorization",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "memory",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "classification-distractor",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 0.5,
+            "ndcg_at_k": 0.63093
+          },
+          "latency_ms": 0.562541
+        },
+        {
+          "case_id": "related-retrieval",
+          "query": "retrieving",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "network-distractor",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.574417
+        },
+        {
+          "case_id": "related-branch",
+          "query": "branching",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "branch",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "branch",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1",
+              "rank": 3
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.5315
+        },
+        {
+          "case_id": "related-sqlite",
+          "query": "transactional",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "redaction",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 0.0,
+            "reciprocal_rank_at_k": 0.0,
+            "ndcg_at_k": 0.0
+          },
+          "latency_ms": 0.554542
+        },
+        {
+          "case_id": "related-tools",
+          "query": "validating",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "tools",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "network-distractor",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "retrieval",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 0.2,
+            "ndcg_at_k": 0.386853
+          },
+          "latency_ms": 0.56625
+        },
+        {
+          "case_id": "related-citation",
+          "query": "citations",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "citation",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "branch",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "evaluation",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "classification-distractor",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 0.5,
+            "ndcg_at_k": 0.63093
+          },
+          "latency_ms": 0.66675
+        },
+        {
+          "case_id": "related-compaction",
+          "query": "compacted",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "compaction",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "cache-distractor",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 0.333333,
+            "ndcg_at_k": 0.5
+          },
+          "latency_ms": 0.684042
+        },
+        {
+          "case_id": "related-trace",
+          "query": "observable",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "trace",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "redaction",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "sqlite",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.861666
+        },
+        {
+          "case_id": "related-security",
+          "query": "injecting",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "security",
+              "passage_id": "p1",
+              "rank": 1
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 1.0,
+            "ndcg_at_k": 1.0
+          },
+          "latency_ms": 0.728
+        },
+        {
+          "case_id": "related-abort",
+          "query": "cancelling",
+          "category": "related-word-form",
+          "relevant": [
+            {
+              "paper_id": "abort",
+              "passage_id": "p1"
+            }
+          ],
+          "ranked": [
+            {
+              "paper_id": "memory",
+              "passage_id": "p1",
+              "rank": 1
+            },
+            {
+              "paper_id": "trace",
+              "passage_id": "p1",
+              "rank": 2
+            },
+            {
+              "paper_id": "abort",
+              "passage_id": "p1",
+              "rank": 3
+            },
+            {
+              "paper_id": "tools",
+              "passage_id": "p1",
+              "rank": 4
+            },
+            {
+              "paper_id": "citation",
+              "passage_id": "p1",
+              "rank": 5
+            }
+          ],
+          "metrics": {
+            "recall_at_k": 1.0,
+            "reciprocal_rank_at_k": 0.333333,
+            "ndcg_at_k": 0.5
+          },
+          "latency_ms": 0.679416
+        }
+      ]
+    }
+  },
+  "hybrid_delta_vs_lexical": {
+    "recall_at_k": 0.45,
+    "mrr_at_k": 0.293333,
+    "ndcg_at_k": 0.332436
+  },
+  "hybrid_delta_vs_vector": {
+    "recall_at_k": 0.0,
+    "mrr_at_k": 0.0,
+    "ndcg_at_k": 0.0
+  }
+}
