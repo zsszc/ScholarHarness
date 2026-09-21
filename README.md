@@ -11,6 +11,8 @@ review, start with the [three-minute portfolio guide](docs/portfolio.md),
 [architecture](docs/architecture.md), and reproducible
 [offline benchmark](docs/benchmark.md). Every non-trivial milestone has requirement
 ids and verification evidence under [`docs/specs`](docs/specs).
+The standalone Chinese [deep-dive and interview handbook](docs/scholar-harness-deep-dive.html)
+opens locally as one HTML file, with embedded diagrams and an 80-question study bank.
 Release history and owner-side publication checks live in
 [`CHANGELOG.md`](CHANGELOG.md) and [`docs/release.md`](docs/release.md).
 

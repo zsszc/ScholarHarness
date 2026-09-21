@@ -1,6 +1,6 @@
 # Standalone ScholarHarness deep-dive handbook
 
-Status: Approved
+Status: Verified
 Date: 2026-09-20
 
 ## Problem
