@@ -1,6 +1,6 @@
 # Retrieval ablation evaluation
 
-Status: Approved
+Status: Verified
 Date: 2026-09-21
 
 ## Problem

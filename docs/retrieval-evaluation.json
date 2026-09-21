@@ -10,7 +10,7 @@
     "python": "3.12.2",
     "sqlite": "3.45.2",
     "platform": "macOS-26.6.2-x86_64-i386-64bit",
-    "git_commit": "c3c622c"
+    "git_commit": "d6087d6"
   },
   "modes": {
     "lexical": {
@@ -18,8 +18,8 @@
       "recall_at_k": 0.5,
       "mrr_at_k": 0.5,
       "ndcg_at_k": 0.5,
-      "latency_ms_p50": 0.254625,
-      "latency_ms_p95": 0.761792,
+      "latency_ms_p50": 0.264542,
+      "latency_ms_p95": 0.576583,
       "categories": {
         "exact-token": {
           "case_count": 10,
@@ -67,7 +67,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.761792
+          "latency_ms": 0.576583
         },
         {
           "case_id": "exact-retrieval",
@@ -96,7 +96,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.419375
+          "latency_ms": 0.29425
         },
         {
           "case_id": "exact-branch",
@@ -125,7 +125,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.348792
+          "latency_ms": 0.33375
         },
         {
           "case_id": "exact-sqlite",
@@ -149,7 +149,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.312584
+          "latency_ms": 0.737208
         },
         {
           "case_id": "exact-tools",
@@ -193,7 +193,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.327875
+          "latency_ms": 0.403625
         },
         {
           "case_id": "exact-citation",
@@ -217,7 +217,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.278958
+          "latency_ms": 0.283
         },
         {
           "case_id": "exact-compaction",
@@ -251,7 +251,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.275708
+          "latency_ms": 0.278792
         },
         {
           "case_id": "exact-trace",
@@ -285,7 +285,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.299334
+          "latency_ms": 0.29825
         },
         {
           "case_id": "exact-evaluation",
@@ -314,7 +314,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.975375
+          "latency_ms": 0.307333
         },
         {
           "case_id": "exact-security",
@@ -348,7 +348,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.254625
+          "latency_ms": 0.2735
         },
         {
           "case_id": "related-memory",
@@ -366,7 +366,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.158042
+          "latency_ms": 0.219458
         },
         {
           "case_id": "related-retrieval",
@@ -384,7 +384,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.15525
+          "latency_ms": 0.188333
         },
         {
           "case_id": "related-branch",
@@ -402,7 +402,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.152583
+          "latency_ms": 0.195083
         },
         {
           "case_id": "related-sqlite",
@@ -420,7 +420,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.209958
+          "latency_ms": 0.186333
         },
         {
           "case_id": "related-tools",
@@ -438,7 +438,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.231
+          "latency_ms": 0.198292
         },
         {
           "case_id": "related-citation",
@@ -456,7 +456,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.198458
+          "latency_ms": 0.191458
         },
         {
           "case_id": "related-compaction",
@@ -474,7 +474,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.204875
+          "latency_ms": 0.189708
         },
         {
           "case_id": "related-trace",
@@ -492,7 +492,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.285834
+          "latency_ms": 0.264542
         },
         {
           "case_id": "related-security",
@@ -510,7 +510,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.178083
+          "latency_ms": 0.1925
         },
         {
           "case_id": "related-abort",
@@ -528,7 +528,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.179459
+          "latency_ms": 0.260625
         }
       ]
     },
@@ -537,8 +537,8 @@
       "recall_at_k": 0.95,
       "mrr_at_k": 0.793333,
       "ndcg_at_k": 0.832436,
-      "latency_ms_p50": 0.481333,
-      "latency_ms_p95": 0.751375,
+      "latency_ms_p50": 0.570458,
+      "latency_ms_p95": 1.062375,
       "categories": {
         "exact-token": {
           "case_count": 10,
@@ -591,7 +591,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.7285
+          "latency_ms": 0.69275
         },
         {
           "case_id": "exact-retrieval",
@@ -635,7 +635,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.560792
+          "latency_ms": 0.572959
         },
         {
           "case_id": "exact-branch",
@@ -669,7 +669,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.489833
+          "latency_ms": 0.567292
         },
         {
           "case_id": "exact-sqlite",
@@ -713,7 +713,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.494958
+          "latency_ms": 0.61775
         },
         {
           "case_id": "exact-tools",
@@ -757,7 +757,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.495584
+          "latency_ms": 0.851291
         },
         {
           "case_id": "exact-citation",
@@ -801,7 +801,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.482666
+          "latency_ms": 1.3155
         },
         {
           "case_id": "exact-compaction",
@@ -845,7 +845,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.481084
+          "latency_ms": 0.563458
         },
         {
           "case_id": "exact-trace",
@@ -884,7 +884,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.47125
+          "latency_ms": 0.570458
         },
         {
           "case_id": "exact-evaluation",
@@ -928,7 +928,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.50175
+          "latency_ms": 0.603333
         },
         {
           "case_id": "exact-security",
@@ -972,7 +972,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.481333
+          "latency_ms": 0.571291
         },
         {
           "case_id": "related-memory",
@@ -1016,7 +1016,7 @@
             "reciprocal_rank_at_k": 0.5,
             "ndcg_at_k": 0.63093
           },
-          "latency_ms": 1.040791
+          "latency_ms": 0.603083
         },
         {
           "case_id": "related-retrieval",
@@ -1060,7 +1060,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.417625
+          "latency_ms": 1.062375
         },
         {
           "case_id": "related-branch",
@@ -1094,7 +1094,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.403708
+          "latency_ms": 0.549917
         },
         {
           "case_id": "related-sqlite",
@@ -1138,7 +1138,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.471375
+          "latency_ms": 0.42575
         },
         {
           "case_id": "related-tools",
@@ -1182,7 +1182,7 @@
             "reciprocal_rank_at_k": 0.2,
             "ndcg_at_k": 0.386853
           },
-          "latency_ms": 0.751375
+          "latency_ms": 0.446042
         },
         {
           "case_id": "related-citation",
@@ -1226,7 +1226,7 @@
             "reciprocal_rank_at_k": 0.5,
             "ndcg_at_k": 0.63093
           },
-          "latency_ms": 0.533458
+          "latency_ms": 0.4325
         },
         {
           "case_id": "related-compaction",
@@ -1270,7 +1270,7 @@
             "reciprocal_rank_at_k": 0.333333,
             "ndcg_at_k": 0.5
           },
-          "latency_ms": 0.425875
+          "latency_ms": 0.403542
         },
         {
           "case_id": "related-trace",
@@ -1314,7 +1314,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.419
+          "latency_ms": 0.647375
         },
         {
           "case_id": "related-security",
@@ -1338,7 +1338,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.409375
+          "latency_ms": 0.447459
         },
         {
           "case_id": "related-abort",
@@ -1382,7 +1382,7 @@
             "reciprocal_rank_at_k": 0.333333,
             "ndcg_at_k": 0.5
           },
-          "latency_ms": 0.41525
+          "latency_ms": 0.408334
         }
       ]
     },
@@ -1391,8 +1391,8 @@
       "recall_at_k": 0.95,
       "mrr_at_k": 0.793333,
       "ndcg_at_k": 0.832436,
-      "latency_ms_p50": 0.693458,
-      "latency_ms_p95": 0.966833,
+      "latency_ms_p50": 0.735209,
+      "latency_ms_p95": 1.2315,
       "categories": {
         "exact-token": {
           "case_count": 10,
@@ -1445,7 +1445,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.743958
+          "latency_ms": 0.893291
         },
         {
           "case_id": "exact-retrieval",
@@ -1489,7 +1489,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.693458
+          "latency_ms": 0.792583
         },
         {
           "case_id": "exact-branch",
@@ -1528,7 +1528,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.721458
+          "latency_ms": 0.802792
         },
         {
           "case_id": "exact-sqlite",
@@ -1572,7 +1572,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.763333
+          "latency_ms": 1.2315
         },
         {
           "case_id": "exact-tools",
@@ -1616,7 +1616,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.790125
+          "latency_ms": 0.735209
         },
         {
           "case_id": "exact-citation",
@@ -1660,7 +1660,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.757416
+          "latency_ms": 0.77625
         },
         {
           "case_id": "exact-compaction",
@@ -1704,7 +1704,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.966833
+          "latency_ms": 0.773083
         },
         {
           "case_id": "exact-trace",
@@ -1743,7 +1743,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.977917
+          "latency_ms": 0.915041
         },
         {
           "case_id": "exact-evaluation",
@@ -1787,7 +1787,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.750167
+          "latency_ms": 0.924542
         },
         {
           "case_id": "exact-security",
@@ -1831,7 +1831,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.678209
+          "latency_ms": 0.774125
         },
         {
           "case_id": "related-memory",
@@ -1875,7 +1875,7 @@
             "reciprocal_rank_at_k": 0.5,
             "ndcg_at_k": 0.63093
           },
-          "latency_ms": 0.562541
+          "latency_ms": 0.690625
         },
         {
           "case_id": "related-retrieval",
@@ -1919,7 +1919,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.574417
+          "latency_ms": 0.598625
         },
         {
           "case_id": "related-branch",
@@ -1953,7 +1953,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.5315
+          "latency_ms": 0.57625
         },
         {
           "case_id": "related-sqlite",
@@ -1997,7 +1997,7 @@
             "reciprocal_rank_at_k": 0.0,
             "ndcg_at_k": 0.0
           },
-          "latency_ms": 0.554542
+          "latency_ms": 0.628958
         },
         {
           "case_id": "related-tools",
@@ -2041,7 +2041,7 @@
             "reciprocal_rank_at_k": 0.2,
             "ndcg_at_k": 0.386853
           },
-          "latency_ms": 0.56625
+          "latency_ms": 0.625042
         },
         {
           "case_id": "related-citation",
@@ -2085,7 +2085,7 @@
             "reciprocal_rank_at_k": 0.5,
             "ndcg_at_k": 0.63093
           },
-          "latency_ms": 0.66675
+          "latency_ms": 0.651084
         },
         {
           "case_id": "related-compaction",
@@ -2129,7 +2129,7 @@
             "reciprocal_rank_at_k": 0.333333,
             "ndcg_at_k": 0.5
           },
-          "latency_ms": 0.684042
+          "latency_ms": 0.647792
         },
         {
           "case_id": "related-trace",
@@ -2173,7 +2173,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.861666
+          "latency_ms": 3.2435
         },
         {
           "case_id": "related-security",
@@ -2197,7 +2197,7 @@
             "reciprocal_rank_at_k": 1.0,
             "ndcg_at_k": 1.0
           },
-          "latency_ms": 0.728
+          "latency_ms": 0.676625
         },
         {
           "case_id": "related-abort",
@@ -2241,7 +2241,7 @@
             "reciprocal_rank_at_k": 0.333333,
             "ndcg_at_k": 0.5
           },
-          "latency_ms": 0.679416
+          "latency_ms": 0.632125
         }
       ]
     }

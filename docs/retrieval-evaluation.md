@@ -5,7 +5,7 @@
 
 ## 复现
 
-评测生成时的已提交 HEAD：`c3c622c`。实现提交后会重新生成该字段。
+实现提交：`d6087d6`。
 
 ```bash
 uv run scholar-harness retrieval-eval \
@@ -34,9 +34,9 @@ uv run scholar-harness retrieval-eval \
 
 | 模式 | Recall@5 | MRR@5 | nDCG@5 | P50 | P95 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| BM25 / lexical | 50.0% | 50.0% | 50.0% | 0.255 ms | 0.762 ms |
-| Hashing vector | 95.0% | 79.3% | 83.2% | 0.481 ms | 0.751 ms |
-| RRF hybrid | 95.0% | 79.3% | 83.2% | 0.693 ms | 0.967 ms |
+| BM25 / lexical | 50.0% | 50.0% | 50.0% | 0.265 ms | 0.577 ms |
+| Hashing vector | 95.0% | 79.3% | 83.2% | 0.570 ms | 1.062 ms |
+| RRF hybrid | 95.0% | 79.3% | 83.2% | 0.735 ms | 1.232 ms |
 
 相对 BM25，Hybrid 的绝对变化为：
 

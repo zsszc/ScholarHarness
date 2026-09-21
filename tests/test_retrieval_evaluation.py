@@ -65,6 +65,7 @@ def test_evaluation_runs_three_modes_and_cleans_temporary_database(
 
     assert report.schema_version == 1
     assert report.dataset_sha256 == dataset.sha256()
+    assert report.environment.git_commit == "d6087d6"
     assert report.query_count == 20
     assert report.passage_count == 15
     assert set(report.modes) == {"lexical", "vector", "hybrid"}
